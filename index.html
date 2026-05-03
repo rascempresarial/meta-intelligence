@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta Intelligence — Diagnóstico de Campanhas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #090b0f;
+  --surface: #0f1218;
+  --surface2: #161b24;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --accent: #4f8ef7;
+  --accent2: #7c6af7;
+  --green: #22d3a5;
+  --red: #f75a5a;
+  --amber: #f7a94f;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Geist', sans-serif;
+  --serif: 'Instrument Serif', serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh}
+::selection{background:rgba(79,142,247,.3)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* HEADER */
+.header{border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;background:rgba(9,11,15,.92);backdrop-filter:blur(12px);z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+.logo-name{font-size:13px;font-weight:500;letter-spacing:.02em}
+.logo-tag{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.header-right{display:flex;align-items:center;gap:8px}
+.status-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-family:var(--mono);padding:4px 10px;border:1px solid var(--border);border-radius:20px}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--muted)}
+.status-dot.live{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* LAYOUT */
+.container{max-width:1100px;margin:0 auto;padding:40px 32px}
+.grid-main{display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start}
+
+/* SETUP PANEL */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.panel-title{font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.panel-body{padding:20px}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:6px;letter-spacing:.04em}
+.field input,.field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border .15s}
+.field input:focus,.field select:focus{border-color:rgba(79,142,247,.4)}
+.field input::placeholder{color:var(--muted)}
+.field select option{background:var(--surface2)}
+
+.divider{height:1px;background:var(--border);margin:16px 0}
+.section-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+.metric-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+
+.run-btn{width:100%;padding:12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
+.run-btn:hover{background:#3a7ef5;transform:translateY(-1px)}
+.run-btn:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed;transform:none}
+.run-btn .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.run-btn.loading .spinner{display:block}
+.run-btn.loading .btn-label{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.mode-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:16px}
+.mode-tab{flex:1;padding:6px;text-align:center;font-size:11px;font-weight:500;border-radius:6px;cursor:pointer;color:var(--muted);transition:all .15s}
+.mode-tab.active{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+
+/* RIGHT PANEL — RESULTS */
+.results-area{display:flex;flex-direction:column;gap:16px}
+
+.empty-state{background:var(--surface);border:1px dashed var(--border2);border-radius:12px;padding:60px 32px;text-align:center}
+.empty-icon{width:48px;height:48px;margin:0 auto 16px;opacity:.2}
+.empty-title{font-family:var(--serif);font-size:22px;color:var(--muted);margin-bottom:6px}
+.empty-sub{font-size:12px;color:var(--muted);font-family:var(--mono)}
+
+/* CAMPAIGN CARDS */
+.camp-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;animation:fadeUp .4s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.camp-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.camp-name{font-weight:500;font-size:14px}
+.camp-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.status-badge{font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;font-family:var(--mono)}
+.badge-ok{background:rgba(34,211,165,.12);color:var(--green);border:1px solid rgba(34,211,165,.2)}
+.badge-warn{background:rgba(247,169,79,.12);color:var(--amber);border:1px solid rgba(247,169,79,.2)}
+.badge-bad{background:rgba(247,90,90,.12);color:var(--red);border:1px solid rgba(247,90,90,.2)}
+
+.metrics-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-bottom:1px solid var(--border)}
+.metric-cell{padding:14px 16px;border-right:1px solid var(--border)}
+.metric-cell:last-child{border-right:none}
+.metric-cell-label{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:4px}
+.metric-cell-val{font-size:18px;font-weight:500;font-family:var(--mono)}
+.metric-cell-val.ok{color:var(--green)}
+.metric-cell-val.warn{color:var(--amber)}
+.metric-cell-val.bad{color:var(--red)}
+
+.diag-body{padding:20px}
+.diag-section{margin-bottom:16px}
+.diag-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.diag-text{font-size:13px;color:var(--text);line-height:1.7}
+
+.solutions-list{display:flex;flex-direction:column;gap:8px}
+.solution-item{display:flex;align-items:flex-start;gap:12px;background:var(--surface2);border-radius:8px;padding:12px 14px;border:1px solid var(--border)}
+.sol-priority{font-size:10px;font-weight:500;font-family:var(--mono);padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.sol-p1{background:rgba(247,90,90,.15);color:var(--red)}
+.sol-p2{background:rgba(247,169,79,.15);color:var(--amber)}
+.sol-p3{background:rgba(79,142,247,.15);color:var(--accent)}
+.sol-text{font-size:13px;color:var(--text);line-height:1.6}
+.sol-action{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+
+/* SUMMARY BANNER */
+.summary-banner{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;animation:fadeUp .3s ease both}
+.summary-left{display:flex;align-items:center;gap:12px}
+.summary-icon{font-size:20px}
+.summary-text{font-size:13px;color:var(--muted)}
+.summary-text strong{color:var(--text);font-weight:500}
+.summary-stats{display:flex;gap:20px}
+.stat-item{text-align:right}
+.stat-val{font-size:18px;font-weight:500;font-family:var(--mono)}
+.stat-lab{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+/* ERROR */
+.error-box{background:rgba(247,90,90,.08);border:1px solid rgba(247,90,90,.2);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--red);font-family:var(--mono);display:none}
+
+/* DEMO badge */
+.demo-note{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent);font-family:var(--mono);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+@media(max-width:800px){
+  .grid-main{grid-template-columns:1fr}
+  .metrics-strip{grid-template-columns:repeat(3,1fr)}
+  .metrics-strip .metric-cell:nth-child(3){border-right:none}
+  .metrics-strip .metric-cell:nth-child(4){border-top:1px solid var(--border)}
+  .metrics-strip .metric-cell:nth-child(5){border-top:1px solid var(--border)}
+  .container{padding:24px 16px}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <div>
+      <div class="logo-name">Meta Intelligence</div>
+      <div class="logo-tag">by Alexsander · Gestão de Tráfego</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-pill" id="conn-status">
+      <div class="status-dot" id="conn-dot"></div>
+      <span id="conn-label">desconectado</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="grid-main">
+
+    <!-- SETUP PANEL -->
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Configuração</div>
+        </div>
+        <div class="panel-body">
+
+          <div class="mode-tabs">
+            <div class="mode-tab active" id="tab-live" onclick="setMode('live')">API Real</div>
+            <div class="mode-tab" id="tab-demo" onclick="setMode('demo')">Demo</div>
+          </div>
+
+          <div id="live-fields">
+            <div class="field">
+              <label>META ACCESS TOKEN</label>
+              <input type="password" id="meta-token" placeholder="EAAxxxxx...">
+            </div>
+            <div class="field">
+              <label>AD ACCOUNT ID</label>
+              <input type="text" id="ad-account" placeholder="act_123456789">
+            </div>
+            <div class="field">
+              <label>ANTHROPIC API KEY</label>
+              <input type="password" id="claude-key" placeholder="sk-ant-...">
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="section-label">Parâmetros</div>
+
+          <div class="field">
+            <label>PERÍODO</label>
+            <select id="date-preset">
+              <option value="yesterday">Ontem</option>
+              <option value="last_7d" selected>Últimos 7 dias</option>
+              <option value="last_14d">Últimos 14 dias</option>
+              <option value="last_30d">Últimos 30 dias</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>META CPR (R$) — custo por resultado alvo</label>
+            <input type="number" id="target-cpr" placeholder="Ex: 3.00" step="0.5" value="3.00">
+          </div>
+
+          <div class="field">
+            <label>CONTEXTO DO CLIENTE (opcional)</label>
+            <input type="text" id="client-ctx" placeholder="Ex: loja de eletrônicos, Brasília">
+          </div>
+
+          <div class="divider"></div>
+          <div class="section-label">Análise solicitada</div>
+
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+              <input type="checkbox" id="chk-diag" checked style="width:auto"> Diagnóstico geral
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+              <input type="checkbox" id="chk-budget" checked style="width:auto"> Ajuste de orçamento e bid
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+              <input type="checkbox" id="chk-creative" checked style="width:auto"> Análise de criativos
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+              <input type="checkbox" id="chk-audience" checked style="width:auto"> Segmentação e público
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+              <input type="checkbox" id="chk-steps" checked style="width:auto"> Próximos passos
+            </label>
+          </div>
+
+          <div class="error-box" id="error-box"></div>
+
+          <button class="run-btn" id="run-btn" onclick="runAnalysis()">
+            <div class="spinner"></div>
+            <span class="btn-label">Buscar e Analisar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS PANEL -->
+    <div class="results-area" id="results-area">
+      <div class="empty-state">
+        <svg class="empty-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="8" width="40" height="32" rx="4" stroke="currentColor" stroke-width="2"/>
+          <path d="M16 28l6-8 5 6 4-5 6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="14" cy="20" r="3" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <div class="empty-title">Aguardando análise</div>
+        <div class="empty-sub">Configure as credenciais e clique em Buscar e Analisar</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+const META_API = 'https://graph.facebook.com/v19.0';
+
+let currentMode = 'live';
+
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('tab-live').classList.toggle('active', m === 'live');
+  document.getElementById('tab-demo').classList.toggle('active', m === 'demo');
+  document.getElementById('live-fields').style.opacity = m === 'live' ? '1' : '0.4';
+  document.getElementById('live-fields').style.pointerEvents = m === 'live' ? 'all' : 'none';
+}
+
+function setStatus(live, label) {
+  const dot = document.getElementById('conn-dot');
+  const lbl = document.getElementById('conn-label');
+  dot.className = 'status-dot' + (live ? ' live' : '');
+  lbl.textContent = label;
+}
+
+function showError(msg) {
+  const b = document.getElementById('error-box');
+  b.textContent = msg;
+  b.style.display = 'block';
+  setTimeout(() => b.style.display = 'none', 6000);
+}
+
+// ── DEMO DATA ──────────────────────────────────────────
+function getDemoData() {
+  return [
+    {
+      campaign_id: 'demo_001',
+      campaign_name: 'César Imports — iPhone Conversas',
+      objective: 'MESSAGES',
+      spend: '287.50',
+      impressions: '38400',
+      reach: '18200',
+      clicks: '468',
+      ctr: '1.22',
+      cpc: '0.61',
+      cpm: '7.49',
+      frequency: '2.11',
+      cost_per_result: '3.82',
+      results: 75,
+      days: 7,
+    },
+    {
+      campaign_id: 'demo_002',
+      campaign_name: 'César Imports — Acessórios Tráfego',
+      objective: 'LINK_CLICKS',
+      spend: '143.00',
+      impressions: '21600',
+      reach: '9800',
+      clicks: '194',
+      ctr: '0.90',
+      cpc: '0.74',
+      cpm: '6.62',
+      frequency: '2.20',
+      cost_per_result: '4.60',
+      results: 31,
+      days: 7,
+    },
+    {
+      campaign_id: 'demo_003',
+      campaign_name: 'César Imports — Retargeting Quente',
+      objective: 'MESSAGES',
+      spend: '95.00',
+      impressions: '8900',
+      reach: '2100',
+      clicks: '201',
+      ctr: '2.26',
+      cpc: '0.47',
+      cpm: '10.67',
+      frequency: '4.24',
+      cost_per_result: '2.18',
+      results: 43,
+      days: 7,
+    },
+  ];
+}
+
+// ── META API CALL ──────────────────────────────────────
+async function fetchMetaCampaigns(token, accountId, datePreset) {
+  const fields = [
+    'campaign_name','campaign_id','objective','spend','impressions',
+    'reach','clicks','ctr','cpc','cpm','frequency','actions','cost_per_action_type'
+  ].join(',');
+
+  const params = new URLSearchParams({
+    access_token: token,
+    level: 'campaign',
+    date_preset: datePreset,
+    fields,
+    filtering: JSON.stringify([{field:'campaign.effective_status',operator:'IN',value:['ACTIVE']}]),
+    limit: 30
+  });
+
+  const resp = await fetch(`${META_API}/${accountId}/insights?${params}`);
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.data || [];
+}
+
+function normalizeCampaign(c, targetCpr) {
+  const spend = parseFloat(c.spend || 0);
+  const impressions = parseInt(c.impressions || 0);
+  const reach = parseInt(c.reach || 0);
+  const clicks = parseInt(c.clicks || 0);
+  const ctr = parseFloat(c.ctr || 0);
+  const cpc = parseFloat(c.cpc || 0);
+  const cpm = parseFloat(c.cpm || 0);
+  const freq = parseFloat(c.frequency || 0);
+
+  // Extract CPR
+  let cpr = parseFloat(c.cost_per_result || 0);
+  let results = parseInt(c.results || 0);
+  if (!cpr && c.cost_per_action_type) {
+    const types = ['onsite_conversion.messaging_conversation_started_7d','lead','purchase','omni_initiated_checkout'];
+    for (const a of c.cost_per_action_type) {
+      if (types.includes(a.action_type)) { cpr = parseFloat(a.value || 0); break; }
+    }
+  }
+  if (!results && spend && cpr) results = Math.round(spend / cpr);
+
+  const desvio = targetCpr ? ((cpr - targetCpr) / targetCpr * 100) : 0;
+
+  return { ...c, spend, impressions, reach, clicks, ctr, cpc, cpm, freq, cpr, results, desvio };
+}
+
+// ── CLAUDE ANALYSIS ────────────────────────────────────
+async function analyzeWithClaude(campaigns, targetCpr, clientCtx, claudeKey, checks) {
+  const dataBlock = campaigns.map(c => `
+CAMPANHA: ${c.campaign_name}
+  Objetivo: ${c.objective}
+  Gasto: R$ ${c.spend.toFixed(2)} | Resultados: ${c.results}
+  CPR: R$ ${c.cpr.toFixed(2)}${targetCpr ? ` (meta: R$ ${targetCpr}, desvio: ${c.desvio > 0 ? '+' : ''}${c.desvio.toFixed(0)}%)` : ''}
+  CTR: ${c.ctr.toFixed(2)}% | CPC: R$ ${c.cpc.toFixed(2)} | CPM: R$ ${c.cpm.toFixed(2)}
+  Alcance: ${c.reach.toLocaleString('pt-BR')} | Frequência: ${c.freq.toFixed(1)}`).join('\n');
+
+  const items = [];
+  if (checks.diag) items.push('1. Diagnóstico objetivo por campanha (2–3 linhas cada, identifique a causa raiz)');
+  if (checks.budget) items.push('2. Recomendações exatas de orçamento e bid (valores em R$, motivo em 1 linha)');
+  if (checks.creative) items.push('3. Avaliação de criativos com base no CTR e frequência');
+  if (checks.audience) items.push('4. Análise de público: saturação, qualidade, expansão sugerida');
+  if (checks.steps) items.push('5. Top 3 ações prioritárias (hoje / 48h / semana)');
+
+  const prompt = `Você é um especialista sênior em Meta Ads. Analise as campanhas e retorne um JSON com a seguinte estrutura exata para cada campanha. Retorne APENAS o JSON, sem markdown, sem explicação.
+
+Estrutura:
+{
+  "resumo_geral": "string",
+  "campanhas": [
+    {
+      "id": "campaign_id",
+      "diagnostico": "string com diagnóstico da campanha",
+      "status": "ok|warn|bad",
+      "solucoes": [
+        { "prioridade": "P1|P2|P3", "titulo": "string", "acao": "string com valor exato" }
+      ]
+    }
+  ]
+}
+
+Regras:
+- Status "ok" = CPR abaixo da meta e frequência < 3.0
+- Status "warn" = CPR até 30% acima da meta OU frequência 3.0–3.5
+- Status "bad" = CPR > 30% acima da meta OU frequência > 3.5
+- P1 = ação imediata crítica, P2 = 48h, P3 = estratégico
+- Nunca sugira aumento de orçamento > 20% por vez
+- Frequência > 3.5 = sinalizar fadiga antes de qualquer recomendação de bid
+- Use valores em R$ exatos nas ações
+- Máximo 4 soluções por campanha
+
+${clientCtx ? `Contexto: ${clientCtx}` : ''}
+${targetCpr ? `Meta global de CPR: R$ ${targetCpr}` : ''}
+
+Itens solicitados: ${items.join('; ')}
+
+DADOS:
+${dataBlock}`;
+
+  const resp = await fetch(CLAUDE_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': claudeKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  const raw = data.content[0].text.trim().replace(/```json|```/g, '');
+  return JSON.parse(raw);
+}
+
+// ── RENDER ─────────────────────────────────────────────
+function getBadgeClass(status) {
+  return status === 'ok' ? 'badge-ok' : status === 'warn' ? 'badge-warn' : 'badge-bad';
+}
+function getBadgeLabel(status) {
+  return status === 'ok' ? 'No alvo' : status === 'warn' ? 'Atenção' : 'Crítico';
+}
+function getMetricClass(val, thresholds) {
+  if (!thresholds) return '';
+  if (thresholds.reverse) return val <= thresholds.warn ? 'ok' : val <= thresholds.bad ? 'warn' : 'bad';
+  return val >= thresholds.ok ? 'ok' : val >= thresholds.warn ? 'warn' : 'bad';
+}
+function getPrioClass(p) {
+  return p === 'P1' ? 'sol-p1' : p === 'P2' ? 'sol-p2' : 'sol-p3';
+}
+
+function renderResults(campaigns, analysis, targetCpr) {
+  const area = document.getElementById('results-area');
+  let html = '';
+
+  // Summary banner
+  const total_spend = campaigns.reduce((s, c) => s + c.spend, 0);
+  const total_results = campaigns.reduce((s, c) => s + c.results, 0);
+  const avg_cpr = total_results > 0 ? total_spend / total_results : 0;
+  const critical = analysis.campanhas.filter(c => c.status === 'bad').length;
+
+  html += `<div class="summary-banner">
+    <div class="summary-left">
+      <div class="summary-icon">📊</div>
+      <div>
+        <div style="font-weight:500;font-size:14px">${analysis.resumo_geral}</div>
+        <div class="summary-text">${campaigns.length} campanha(s) analisada(s)${critical > 0 ? ` · <span style="color:var(--red)">${critical} crítica(s)</span>` : ''}</div>
+      </div>
+    </div>
+    <div class="summary-stats">
+      <div class="stat-item">
+        <div class="stat-val" style="color:var(--text)">R$ ${total_spend.toFixed(2)}</div>
+        <div class="stat-lab">gasto total</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" style="color:${avg_cpr > targetCpr * 1.3 ? 'var(--red)' : avg_cpr > targetCpr ? 'var(--amber)' : 'var(--green)'}">R$ ${avg_cpr.toFixed(2)}</div>
+        <div class="stat-lab">CPR médio</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" style="color:var(--text)">${total_results}</div>
+        <div class="stat-lab">resultados</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Campaign cards
+  campaigns.forEach((c, i) => {
+    const ai = analysis.campanhas.find(a => a.id === c.campaign_id) || analysis.campanhas[i] || {};
+    const status = ai.status || 'warn';
+    const delay = i * 0.08;
+
+    const ctrClass = c.ctr >= 2 ? 'ok' : c.ctr >= 1 ? 'warn' : 'bad';
+    const freqClass = c.freq < 2.5 ? 'ok' : c.freq < 3.5 ? 'warn' : 'bad';
+    const cprClass = !targetCpr ? '' : c.cpr <= targetCpr ? 'ok' : c.cpr <= targetCpr * 1.3 ? 'warn' : 'bad';
+
+    html += `<div class="camp-card" style="animation-delay:${delay}s">
+      <div class="camp-header">
+        <div>
+          <div class="camp-name">${c.campaign_name}</div>
+          <div class="camp-meta">${c.objective} · ${c.days || 7} dias · R$ ${c.spend.toFixed(2)} investidos</div>
+        </div>
+        <span class="status-badge ${getBadgeClass(status)}">${getBadgeLabel(status)}</span>
+      </div>
+      <div class="metrics-strip">
+        <div class="metric-cell">
+          <div class="metric-cell-label">CPR</div>
+          <div class="metric-cell-val ${cprClass}">R$ ${c.cpr.toFixed(2)}</div>
+        </div>
+        <div class="metric-cell">
+          <div class="metric-cell-label">CTR</div>
+          <div class="metric-cell-val ${ctrClass}">${c.ctr.toFixed(2)}%</div>
+        </div>
+        <div class="metric-cell">
+          <div class="metric-cell-label">CPM</div>
+          <div class="metric-cell-val">R$ ${c.cpm.toFixed(2)}</div>
+        </div>
+        <div class="metric-cell">
+          <div class="metric-cell-label">Freq.</div>
+          <div class="metric-cell-val ${freqClass}">${c.freq.toFixed(1)}</div>
+        </div>
+        <div class="metric-cell">
+          <div class="metric-cell-label">Resultados</div>
+          <div class="metric-cell-val">${c.results}</div>
+        </div>
+      </div>
+      <div class="diag-body">
+        ${ai.diagnostico ? `<div class="diag-section">
+          <div class="diag-label">Diagnóstico</div>
+          <div class="diag-text">${ai.diagnostico}</div>
+        </div>` : ''}
+        ${ai.solucoes && ai.solucoes.length ? `<div class="diag-section">
+          <div class="diag-label">Soluções recomendadas</div>
+          <div class="solutions-list">
+            ${ai.solucoes.map(s => `
+            <div class="solution-item">
+              <span class="sol-priority ${getPrioClass(s.prioridade)}">${s.prioridade}</span>
+              <div>
+                <div class="sol-text">${s.titulo}</div>
+                <div class="sol-action">${s.acao}</div>
+              </div>
+            </div>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  area.innerHTML = html;
+}
+
+// ── MAIN FLOW ──────────────────────────────────────────
+async function runAnalysis() {
+  const btn = document.getElementById('run-btn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  document.getElementById('error-box').style.display = 'none';
+
+  const targetCpr = parseFloat(document.getElementById('target-cpr').value) || null;
+  const clientCtx = document.getElementById('client-ctx').value;
+  const datePreset = document.getElementById('date-preset').value;
+  const checks = {
+    diag: document.getElementById('chk-diag').checked,
+    budget: document.getElementById('chk-budget').checked,
+    creative: document.getElementById('chk-creative').checked,
+    audience: document.getElementById('chk-audience').checked,
+    steps: document.getElementById('chk-steps').checked,
+  };
+
+  try {
+    let rawCampaigns;
+
+    if (currentMode === 'demo') {
+      setStatus(true, 'modo demo');
+      rawCampaigns = getDemoData();
+    } else {
+      const token = document.getElementById('meta-token').value.trim();
+      const account = document.getElementById('ad-account').value.trim();
+      if (!token || !account) throw new Error('Informe o Meta Access Token e o Ad Account ID.');
+      setStatus(true, 'conectando ao Meta...');
+      rawCampaigns = await fetchMetaCampaigns(token, account, datePreset);
+      if (!rawCampaigns.length) throw new Error('Nenhuma campanha ativa encontrada no período.');
+    }
+
+    const claudeKey = document.getElementById('claude-key').value.trim();
+    if (!claudeKey && currentMode !== 'demo') throw new Error('Informe a Anthropic API Key.');
+
+    setStatus(true, 'analisando com Claude...');
+    const campaigns = rawCampaigns.map(c => normalizeCampaign(c, targetCpr));
+
+    let analysis;
+    if (currentMode === 'demo' && !claudeKey) {
+      // fallback análise local para demo sem key
+      analysis = {
+        resumo_geral: 'Análise demo — campanha de retargeting eficiente, tráfego frio precisa de atenção no CTR.',
+        campanhas: [
+          { id:'demo_001', status:'warn', diagnostico:'CPR 27% acima da meta de R$ 3,00. CTR saudável mas CPM competitivo sugere leilão disputado. Público ainda com espaço para otimização.', solucoes:[{prioridade:'P1',titulo:'Reduzir orçamento diário',acao:'De R$ 50 para R$ 40 e aguardar 48h antes de novo ajuste'},{prioridade:'P2',titulo:'Testar novos criativos',acao:'Criar 2 variações de copy com gancho de urgência (ex: unidades limitadas)'},{prioridade:'P3',titulo:'Revisar segmentação',acao:'Excluir públicos que já converteram e adicionar lookalike 2% dos compradores'}] },
+          { id:'demo_002', status:'bad', diagnostico:'CTR abaixo de 1% indica problema claro no criativo. CPR de R$ 4,60 está 53% acima da meta. Prioridade máxima de intervenção.', solucoes:[{prioridade:'P1',titulo:'Pausar criativos atuais',acao:'Substituir por novos anúncios com foco em benefício direto e CTA claro'},{prioridade:'P1',titulo:'Reduzir orçamento',acao:'De R$ 25 para R$ 15 até CTR superar 1,5%'},{prioridade:'P2',titulo:'Revisar público-alvo',acao:'Testar público mais amplo — interesses muito nichados elevam CPM sem ganho de conversão'}] },
+          { id:'demo_003', status:'warn', diagnostico:'Frequência 4.24 — audiência saturada. CPR excelente (R$ 2,18) mas tende a piorar rapidamente com a fadiga. Agir antes que a performance caia.', solucoes:[{prioridade:'P1',titulo:'Rotacionar criativos imediatamente',acao:'Inserir 3 novos criativos e pausar os que estão rodando há mais de 10 dias'},{prioridade:'P2',titulo:'Expandir público de retargeting',acao:'Aumentar janela de engajamento de 30 para 60 dias para ampliar audiência'},{prioridade:'P3',titulo:'Aproveitar o CPR baixo',acao:'Aumentar orçamento em até 20% (de R$ 15 para R$ 18) com os novos criativos'}] },
+        ]
+      };
+    } else {
+      analysis = await analyzeWithClaude(campaigns, targetCpr, clientCtx, claudeKey, checks);
+    }
+
+    setStatus(true, 'atualizado');
+    renderResults(campaigns, analysis, targetCpr);
+
+  } catch (err) {
+    setStatus(false, 'erro');
+    showError('Erro: ' + err.message);
+    console.error(err);
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
