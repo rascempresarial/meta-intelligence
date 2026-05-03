@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Meta Intelligence — Diagnóstico de Campanhas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -165,6 +166,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
 .hist-meta{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px}
 .hist-badge{font-size:9px;padding:1px 6px;border-radius:10px;font-family:var(--mono);font-weight:500;flex-shrink:0;align-self:center}
 .hist-restore-btn{font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--mono);padding:0;white-space:nowrap;flex-shrink:0;align-self:center}
+
+.send-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center}
+.send-modal-overlay.open{display:flex}
+.send-modal{background:#0d0f13;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px;width:400px;max-width:92vw}
+.send-modal-title{font-size:16px;font-weight:600;margin-bottom:16px;color:#e8eaf0}
+.send-select{width:100%;background:#161b24;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;color:#e8eaf0;font-family:'Geist',sans-serif;font-size:13px;outline:none;margin-bottom:12px}
+.send-field{margin-bottom:12px}
+.send-field label{display:block;font-size:11px;color:#6b7280;font-family:monospace;margin-bottom:5px;letter-spacing:.06em}
+.send-field input{width:100%;background:#161b24;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#e8eaf0;font-family:'Geist',sans-serif;font-size:13px;outline:none}
+.send-btns{display:flex;gap:8px;margin-top:16px}
+.send-btn-primary{flex:1;padding:10px;background:#4f8ef7;border:none;border-radius:8px;color:#fff;font-family:'Geist',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.send-btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.send-btn-ghost{padding:10px 14px;background:none;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#8892a4;font-family:'Geist',sans-serif;font-size:13px;cursor:pointer}
+.send-success{font-size:12px;color:#22d3a5;font-family:monospace;margin-top:8px;display:none}
+.hist-send-btn{font-size:10px;color:#4f8ef7;background:none;border:1px solid rgba(79,142,247,.3);border-radius:4px;padding:2px 7px;cursor:pointer;font-family:monospace;white-space:nowrap;flex-shrink:0;align-self:center;margin-left:6px;transition:all .15s}
+.hist-send-btn:hover{background:rgba(79,142,247,.1)}
+
 </style>
 </head>
 <body>
@@ -811,17 +829,130 @@ function renderHistory() {
         <div class="hist-resumo">${resumoShort}</div>
         <div class="hist-meta">${h.n_camps} campanha(s) · R$ ${h.total_spend.toFixed(2)} gastos · CPR médio R$ ${h.avg_cpr.toFixed(2)}</div>
       </div>
-      <span class="hist-badge" style="${badgeStyle(h.overall)}">${badgeTxt(h.overall)}</span>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+        <span class="hist-badge" style="${badgeStyle(h.overall)}">${badgeTxt(h.overall)}</span>
+        <button class="hist-send-btn" onclick="event.stopPropagation();openSendModal(${JSON.stringify(h).replace(/"/g,'&quot;')})" title="Enviar para cliente">📤 enviar</button>
+      </div>
     </div>`;
   }).join('');
 }
 
-// Carrega histórico ao iniciar
+
+// ── SUPABASE + ENVIO AO CLIENTE ────────────────────────────
+const SUPA_URL = 'https://odmopyluudtndpaicobp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kbW9weWx1dWR0bmRwYWljb2JwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MDU2NDUsImV4cCI6MjA5MzM4MTY0NX0.mchvrT3rGwnwHWt0xsmm-IvYShxAbJbs-4bnfwjauZ4';
+const sbMI = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let pendingHistEntry = null;
+let supaClientes = [];
+
+async function loadSupaClientes() {
+  const { data: { session } } = await sbMI.auth.getSession();
+  if (!session) return;
+  const { data } = await sbMI.from('clientes')
+    .select('id,nome,codigo_acesso,servico')
+    .eq('user_id', session.user.id)
+    .order('nome');
+  supaClientes = data || [];
+}
+
+function openSendModal(histEntry) {
+  pendingHistEntry = histEntry;
+  const overlay = document.getElementById('send-modal-overlay');
+  const sel = document.getElementById('send-client-select');
+  document.getElementById('send-success').style.display = 'none';
+  document.getElementById('send-confirm-btn').disabled = false;
+  document.getElementById('send-confirm-btn').textContent = 'Enviar para cliente';
+
+  if (!supaClientes.length) {
+    sel.innerHTML = '<option value="">Nenhum cliente cadastrado no RASC</option>';
+  } else {
+    sel.innerHTML = '<option value="">Selecione o cliente...</option>' +
+      supaClientes.map(c => `<option value="${c.id}">${c.nome} · ${c.codigo_acesso||'sem código'}</option>`).join('');
+  }
+  overlay.classList.add('open');
+}
+
+function closeSendModal() {
+  document.getElementById('send-modal-overlay').classList.remove('open');
+  pendingHistEntry = null;
+}
+
+async function confirmSendToClient() {
+  const clientId = document.getElementById('send-client-select').value;
+  const titulo = document.getElementById('send-title').value || 'Relatório de Campanhas';
+  const periodo = document.getElementById('send-period').value || 'Últimos 7 dias';
+  const btn = document.getElementById('send-confirm-btn');
+
+  if (!clientId) { alert('Selecione um cliente'); return; }
+  if (!pendingHistEntry) { alert('Nenhuma análise selecionada'); return; }
+
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  const { data: { session } } = await sbMI.auth.getSession();
+  if (!session) { alert('Você precisa estar logado no RASC Dashboard'); btn.disabled=false; btn.textContent='Enviar para cliente'; return; }
+
+  const h = pendingHistEntry;
+  const { error } = await sbMI.from('relatorios_cliente').insert([{
+    user_id: session.user.id,
+    cliente_id: clientId,
+    titulo,
+    periodo,
+    resumo: h.resumo,
+    status_geral: h.overall,
+    total_spend: h.total_spend,
+    total_results: h.total_results,
+    avg_cpr: h.avg_cpr,
+    campanhas: h.campaigns,
+    analysis: h.analysis,
+  }]);
+
+  if (error) {
+    alert('Erro ao enviar: ' + error.message);
+    btn.disabled=false; btn.textContent='Enviar para cliente';
+    return;
+  }
+
+  document.getElementById('send-success').style.display = 'block';
+  btn.textContent = '✓ Enviado!';
+  setTimeout(closeSendModal, 2000);
+}
+
+// Inicializar Supabase no load
 window.addEventListener('DOMContentLoaded', () => {
   loadCredentials();
   renderHistory();
+  loadSupaClientes();
 });
 
+
 </script>
+
+<!-- SEND TO CLIENT MODAL -->
+<div class="send-modal-overlay" id="send-modal-overlay" onclick="if(event.target===this)closeSendModal()">
+  <div class="send-modal">
+    <div class="send-modal-title">📤 Enviar relatório ao cliente</div>
+    <div class="send-field">
+      <label>CLIENTE</label>
+      <select class="send-select" id="send-client-select">
+        <option value="">Carregando clientes...</option>
+      </select>
+    </div>
+    <div class="send-field">
+      <label>TÍTULO DO RELATÓRIO (opcional)</label>
+      <input id="send-title" placeholder="Ex: Análise semanal · Maio 2026">
+    </div>
+    <div class="send-field">
+      <label>PERÍODO</label>
+      <input id="send-period" placeholder="Ex: Últimos 7 dias" value="Últimos 7 dias">
+    </div>
+    <div class="send-btns">
+      <button class="send-btn-ghost" onclick="closeSendModal()">Cancelar</button>
+      <button class="send-btn-primary" id="send-confirm-btn" onclick="confirmSendToClient()">Enviar para cliente</button>
+    </div>
+    <div class="send-success" id="send-success">✓ Relatório enviado com sucesso!</div>
+  </div>
+</div>
+
 </body>
 </html>
