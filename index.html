@@ -181,16 +181,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
 
           <div id="live-fields">
             <div class="field">
-              <label>META ACCESS TOKEN</label>
-              <input type="password" id="meta-token" placeholder="EAAxxxxx...">
+              <label style="display:flex;justify-content:space-between;align-items:center">META ACCESS TOKEN <span id="saved-token" style="display:none;font-size:10px;color:#22d3a5;font-family:monospace">● salvo</span></label>
+              <input type="password" id="meta-token" placeholder="EAAxxxxx..." oninput="saveCredentials()">
             </div>
             <div class="field">
-              <label>AD ACCOUNT ID</label>
-              <input type="text" id="ad-account" placeholder="act_123456789">
+              <label style="display:flex;justify-content:space-between;align-items:center">AD ACCOUNT ID <span id="saved-account" style="display:none;font-size:10px;color:#22d3a5;font-family:monospace">● salvo</span></label>
+              <input type="text" id="ad-account" placeholder="act_123456789" oninput="saveCredentials()">
             </div>
             <div class="field">
-              <label>ANTHROPIC API KEY</label>
-              <input type="password" id="claude-key" placeholder="sk-ant-...">
+              <label style="display:flex;justify-content:space-between;align-items:center">ANTHROPIC API KEY <span id="saved-claude" style="display:none;font-size:10px;color:#22d3a5;font-family:monospace">● salvo</span></label>
+              <input type="password" id="claude-key" placeholder="sk-ant-..." oninput="saveCredentials()">
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:-4px;margin-bottom:4px">
+              <button onclick="clearCredentials()" style="font-size:11px;background:none;border:none;color:#6b7280;cursor:pointer;font-family:monospace;padding:0">limpar credenciais</button>
             </div>
           </div>
 
@@ -648,6 +651,39 @@ async function runAnalysis() {
     btn.disabled = false;
   }
 }
+
+// ── CREDENCIAIS SALVAS ─────────────────────────────────
+function saveCredentials() {
+  const token   = document.getElementById('meta-token').value;
+  const account = document.getElementById('ad-account').value;
+  const claude  = document.getElementById('claude-key').value;
+  if (token)   { localStorage.setItem('mi_meta_token', token);   document.getElementById('saved-token').style.display='inline'; }
+  if (account) { localStorage.setItem('mi_ad_account', account); document.getElementById('saved-account').style.display='inline'; }
+  if (claude)  { localStorage.setItem('mi_claude_key', claude);  document.getElementById('saved-claude').style.display='inline'; }
+}
+
+function loadCredentials() {
+  const token   = localStorage.getItem('mi_meta_token');
+  const account = localStorage.getItem('mi_ad_account');
+  const claude  = localStorage.getItem('mi_claude_key');
+  if (token)   { document.getElementById('meta-token').value  = token;   document.getElementById('saved-token').style.display='inline'; }
+  if (account) { document.getElementById('ad-account').value  = account; document.getElementById('saved-account').style.display='inline'; }
+  if (claude)  { document.getElementById('claude-key').value  = claude;  document.getElementById('saved-claude').style.display='inline'; }
+}
+
+function clearCredentials() {
+  if (!confirm('Apagar credenciais salvas?')) return;
+  localStorage.removeItem('mi_meta_token');
+  localStorage.removeItem('mi_ad_account');
+  localStorage.removeItem('mi_claude_key');
+  document.getElementById('meta-token').value  = '';
+  document.getElementById('ad-account').value  = '';
+  document.getElementById('claude-key').value  = '';
+  ['saved-token','saved-account','saved-claude'].forEach(id => document.getElementById(id).style.display='none');
+}
+
+// Carrega ao iniciar
+window.addEventListener('DOMContentLoaded', loadCredentials);
 </script>
 </body>
 </html>
