@@ -512,15 +512,49 @@ ${dataBlock}`;
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
+      max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
     })
   });
 
   const data = await resp.json();
   if (data.error) throw new Error(data.error.message);
-  const raw = data.content[0].text.trim().replace(/```json|```/g, '');
-  return JSON.parse(raw);
+
+  let raw = data.content[0].text.trim();
+
+  // Remover blocos de código markdown
+  raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+
+  // Extrair apenas o JSON — pegar do primeiro { até o último }
+  const firstBrace = raw.indexOf('{');
+  const lastBrace = raw.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    raw = raw.slice(firstBrace, lastBrace + 1);
+  }
+
+  // Sanitizar caracteres problemáticos dentro de strings JSON
+  // Substitui quebras de linha dentro de valores string por espaço
+  raw = raw.replace(/:\s*"((?:[^"\\]|\\.)*)"/g, (match, val) => {
+    const clean = val
+      .replace(/\n/g, ' ')
+      .replace(/\r/g, ' ')
+      .replace(/\t/g, ' ')
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"');
+    // Desfaz double-escape de escapes legítimos
+    return ': "' + clean.replace(/\\\\\\/g, '\\') + '"';
+  });
+
+  try {
+    return JSON.parse(raw);
+  } catch(e) {
+    // Última tentativa: usar Function para parse mais permissivo
+    try {
+      return JSON.parse(raw.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' '));
+    } catch(e2) {
+      throw new Error('JSON Parse error: ' + e.message + ' — Tente novamente ou reduza o número de campanhas.');
+    }
+  }
 }
 
 // ── RENDER ─────────────────────────────────────────────
