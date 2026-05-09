@@ -902,9 +902,34 @@ function openSendModal(histEntry) {
     sel.innerHTML = '<option value="">Nenhum cliente cadastrado no RASC</option>';
   } else {
     sel.innerHTML = '<option value="">Selecione o cliente...</option>' +
-      supaClientes.map(c => `<option value="${c.id}">${c.nome} · ${c.codigo_acesso||'sem código'}</option>`).join('');
+      supaClientes.map(c => `<option value="${c.id}">${c.nome} · ${c.codigo_acesso||'sem codigo'}</option>`).join('');
   }
+
+  // Renderizar seletor de campanhas
+  renderCampanhasSelector(histEntry.campaigns || []);
   overlay.classList.add('open');
+}
+
+function renderCampanhasSelector(campaigns) {
+  const container = document.getElementById('send-camps-container');
+  if (!campaigns || campaigns.length <= 1) {
+    container.style.display = 'none';
+    // Marcar a unica campanha como selecionada
+    return;
+  }
+  container.style.display = 'block';
+  container.innerHTML = campaigns.map((camp, i) => {
+    const nome = camp.campaign_name || ('Campanha ' + (i+1));
+    const spend = (camp.spend||0).toFixed(2);
+    const cpr = (camp.cpr||0).toFixed(2);
+    const ctr = (camp.ctr||0).toFixed(2);
+    return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#111a13;border-radius:6px;cursor:pointer;margin-bottom:6px;border:1px solid rgba(0,201,110,.1)">' +
+      '<input type="checkbox" name="camp-select" value="' + i + '" checked style="width:auto;accent-color:#00c96e">' +
+      '<div style="flex:1">' +
+        '<div style="font-size:12px;font-weight:500;color:#dff0e8">' + nome + '</div>' +
+        '<div style="font-size:10px;color:#6b7280;font-family:monospace">R$ ' + spend + ' gasto · CPR R$ ' + cpr + ' · CTR ' + ctr + '%</div>' +
+      '</div></label>';
+  }).join('');
 }
 
 function closeSendModal() {
@@ -927,6 +952,39 @@ async function confirmSendToClient() {
   if (!session) { alert('Você precisa estar logado no RASC Dashboard'); btn.disabled=false; btn.textContent='Enviar para cliente'; return; }
 
   const h = pendingHistEntry;
+
+  // Filtrar campanhas selecionadas
+  const allCamps = h.campaigns || [];
+  const checkboxes = document.querySelectorAll('input[name="camp-select"]');
+  let selectedCamps = allCamps;
+  let selectedAnalysis = h.analysis;
+
+  if (checkboxes.length > 0) {
+    const selectedIdxs = Array.from(checkboxes)
+      .filter(cb => cb.checked)
+      .map(cb => parseInt(cb.value));
+
+    if (selectedIdxs.length === 0) {
+      alert('Selecione ao menos uma campanha para enviar.');
+      btn.disabled=false; btn.textContent='Enviar para cliente';
+      return;
+    }
+
+    selectedCamps = selectedIdxs.map(i => allCamps[i]);
+
+    // Filtrar analysis para incluir apenas campanhas selecionadas
+    const selectedIds = new Set(selectedCamps.map(c => c.campaign_id || c.id));
+    selectedAnalysis = {
+      ...h.analysis,
+      campanhas: (h.analysis.campanhas || []).filter((_, i) => selectedIdxs.includes(i))
+    };
+  }
+
+  // Recalcular métricas apenas das campanhas selecionadas
+  const filteredSpend = selectedCamps.reduce((s, c) => s + (c.spend||0), 0);
+  const filteredResults = selectedCamps.reduce((s, c) => s + (c.results||0), 0);
+  const filteredCpr = filteredResults > 0 ? filteredSpend / filteredResults : 0;
+
   const { error } = await sbMI.from('relatorios_cliente').insert([{
     user_id: session.user.id,
     cliente_id: clientId,
@@ -934,11 +992,11 @@ async function confirmSendToClient() {
     periodo,
     resumo: h.resumo,
     status_geral: h.overall,
-    total_spend: h.total_spend,
-    total_results: h.total_results,
-    avg_cpr: h.avg_cpr,
-    campanhas: h.campaigns,
-    analysis: h.analysis,
+    total_spend: filteredSpend,
+    total_results: filteredResults,
+    avg_cpr: filteredCpr,
+    campanhas: selectedCamps,
+    analysis: selectedAnalysis,
   }]);
 
   if (error) {
@@ -971,6 +1029,10 @@ window.addEventListener('DOMContentLoaded', () => {
       <select class="send-select" id="send-client-select">
         <option value="">Carregando clientes...</option>
       </select>
+    </div>
+    <div id="send-camps-container" style="display:none;margin-bottom:12px">
+      <div style="font-size:10px;color:#4a6655;font-family:monospace;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">CAMPANHAS A ENVIAR</div>
+      <div style="font-size:11px;color:#7a9e8a;font-family:monospace;margin-bottom:10px">Selecione apenas as campanhas do cliente selecionado</div>
     </div>
     <div class="send-field">
       <label>TÍTULO DO RELATÓRIO (opcional)</label>
