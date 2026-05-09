@@ -971,9 +971,6 @@ async function confirmSendToClient() {
     }
 
     selectedCamps = selectedIdxs.map(i => allCamps[i]);
-
-    // Filtrar analysis para incluir apenas campanhas selecionadas
-    const selectedIds = new Set(selectedCamps.map(c => c.campaign_id || c.id));
     selectedAnalysis = {
       ...h.analysis,
       campanhas: (h.analysis.campanhas || []).filter((_, i) => selectedIdxs.includes(i))
@@ -985,13 +982,27 @@ async function confirmSendToClient() {
   const filteredResults = selectedCamps.reduce((s, c) => s + (c.results||0), 0);
   const filteredCpr = filteredResults > 0 ? filteredSpend / filteredResults : 0;
 
+  // Calcular status geral APENAS das campanhas selecionadas
+  const selAnalysisCamps = selectedAnalysis.campanhas || [];
+  const hasCritical = selAnalysisCamps.some(c => c.status === 'bad');
+  const hasWarn = selAnalysisCamps.some(c => c.status === 'warn');
+  const filteredStatus = hasCritical ? 'bad' : hasWarn ? 'warn' : 'ok';
+
+  // UPSERT — substitui relatório anterior do mesmo cliente
+  // Primeiro deleta o anterior
+  await sbMI.from('relatorios_cliente')
+    .delete()
+    .eq('cliente_id', clientId)
+    .eq('user_id', session.user.id);
+
+  // Depois insere o novo
   const { error } = await sbMI.from('relatorios_cliente').insert([{
     user_id: session.user.id,
     cliente_id: clientId,
     titulo,
     periodo,
-    resumo: h.resumo,
-    status_geral: h.overall,
+    resumo: selectedAnalysis.resumo_geral || h.resumo,
+    status_geral: filteredStatus,
     total_spend: filteredSpend,
     total_results: filteredResults,
     avg_cpr: filteredCpr,
