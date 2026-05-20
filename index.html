@@ -3,421 +3,1114 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Meta Intelligence — RASC | Diagnóstico de Campanhas</title>
+<title>Meta Intelligence v2 — RASC</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=DM+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ── TOKENS ─────────────────────────────────────────── */
 :root {
-  --bg: #060807;
-  --surface: #0b0f0c;
-  --surface2: #111a13;
-  --border: rgba(0,210,100,.08);
-  --border2: rgba(0,210,100,.15);
-  --text: #dff0e8;
-  --muted: #4a6655;
-  --accent: #00c96e;
-  --accent2: #00a855;
-  --green: #00e57a;
-  --red: #ff4d6a;
-  --amber: #ffb340;
-  --mono: 'DM Mono', monospace;
-  --sans: 'Geist', sans-serif;
-  --serif: 'Instrument Serif', serif;
+  --bg:#060807;--surface:#0b0f0c;--surface2:#111a13;--surface3:#0e1510;
+  --border:rgba(0,210,100,.08);--border2:rgba(0,210,100,.18);
+  --text:#dff0e8;--muted:#4a6655;--muted2:#2e4438;
+  --accent:#00c96e;--accent2:#00a855;--green:#00e57a;--red:#ff4d6a;--amber:#ffb340;--blue:#4db8ff;
+  --mono:'DM Mono',monospace;--sans:'Geist',sans-serif;
+  --hbg:rgba(6,8,7,.94);--shadow:0 8px 32px rgba(0,0,0,.4);
+  --r:rgba(0,201,110,.2);
 }
-*{box-sizing:border-box;margin:0;padding:0}
+[data-theme="light"]{
+  --bg:#f0f4f1;--surface:#fff;--surface2:#eaf2ec;--surface3:#f7fbf8;
+  --border:rgba(0,140,60,.1);--border2:rgba(0,140,60,.22);
+  --text:#0d1f14;--muted:#6b8f78;--muted2:#cce5d8;
+  --accent:#00a855;--accent2:#007a3d;--green:#009954;--red:#d93050;--amber:#c07800;--blue:#0077cc;
+  --hbg:rgba(240,244,241,.94);--shadow:0 8px 32px rgba(0,0,0,.12);
+  --r:rgba(0,160,70,.22);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;transition:background-color .18s,border-color .18s,color .12s}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh}
-::selection{background:rgba(0,201,110,.3)}
+::selection{background:rgba(0,201,110,.28)}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(0,201,110,.2);border-radius:2px}
+::-webkit-scrollbar-thumb{background:var(--r);border-radius:2px}
 
-/* HEADER */
-.header{border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;background:rgba(9,11,15,.92);backdrop-filter:blur(12px);z-index:100}
+/* ── HEADER ─────────────────────────────────────────── */
+.hdr{border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;background:var(--hbg);backdrop-filter:blur(14px);z-index:200}
 .logo{display:flex;align-items:center;gap:10px}
-.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
-.logo-name{font-size:13px;font-weight:500;letter-spacing:.02em}
-.logo-tag{font-size:11px;color:var(--muted);font-family:var(--mono)}
-.header-right{display:flex;align-items:center;gap:8px}
-.status-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-family:var(--mono);padding:4px 10px;border:1px solid var(--border);border-radius:20px}
-.status-dot{width:5px;height:5px;border-radius:50%;background:var(--muted)}
-.status-dot.live{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.logo-name{font-size:13px;font-weight:600;letter-spacing:.02em}
+.logo-tag{font-size:10px;color:var(--accent);opacity:.85;font-family:var(--mono)}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.privacy-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-family:var(--mono);padding:4px 10px;border:1px solid var(--border);border-radius:20px;cursor:pointer;background:none;transition:all .15s}
+.privacy-btn:hover{border-color:var(--border2);color:var(--text)}
+.privacy-btn.active{border-color:var(--amber);color:var(--amber)}
+.icon-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;flex-shrink:0}
+.icon-btn:hover{border-color:var(--border2);background:var(--surface2)}
+.icon-btn svg{width:14px;height:14px;stroke:var(--muted);transition:stroke .12s;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:2}
+.icon-btn:hover svg{stroke:var(--accent)}
+.conn-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-family:var(--mono);padding:4px 10px;border:1px solid var(--border);border-radius:20px}
+.conn-dot{width:5px;height:5px;border-radius:50%;background:var(--muted)}
+.conn-dot.live{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-
-/* LAYOUT */
-.container{max-width:1100px;margin:0 auto;padding:40px 32px}
-.grid-main{display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start}
-
-/* SETUP PANEL */
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
-.panel-title{font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.panel-body{padding:20px}
-
-.field{margin-bottom:14px}
-.field label{display:block;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:6px;letter-spacing:.04em}
-.field input,.field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border .15s}
-.field input:focus,.field select:focus{border-color:rgba(0,201,110,.4)}
-.field input::placeholder{color:var(--muted)}
-.field select option{background:var(--surface2)}
-
-.divider{height:1px;background:var(--border);margin:16px 0}
-.section-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
-
-.metric-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-
-.run-btn{width:100%;padding:12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
-.run-btn:hover{background:#00b560;transform:translateY(-1px)}
-.run-btn:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed;transform:none}
-.run-btn .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
-.run-btn.loading .spinner{display:block}
-.run-btn.loading .btn-label{display:none}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-.mode-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:16px}
-.mode-tab{flex:1;padding:6px;text-align:center;font-size:11px;font-weight:500;border-radius:6px;cursor:pointer;color:var(--muted);transition:all .15s}
+/* ── TABS DE NAVEGAÇÃO ───────────────────────────────── */
+.nav-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);padding:0 28px;background:var(--surface);position:sticky;top:54px;z-index:190}
+.nav-tab{padding:10px 16px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.02em;white-space:nowrap}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.nav-badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;font-size:9px;font-weight:700;margin-left:5px;vertical-align:middle}
+
+/* ── PÁGINAS ─────────────────────────────────────────── */
+.page{display:none}.page.active{display:block}
+.container{max-width:1140px;margin:0 auto;padding:32px 28px}
+
+/* ── DASHBOARD OVERVIEW ──────────────────────────────── */
+.ov-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.ov-title{font-size:20px;font-weight:600}
+.ov-sub{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.btn-primary{padding:9px 16px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-ghost{padding:9px 16px;background:none;border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-ghost:hover{background:var(--surface2)}
+.btn-danger{padding:7px 12px;background:none;border:1px solid rgba(255,77,106,.25);border-radius:8px;color:var(--red);font-family:var(--sans);font-size:11px;cursor:pointer;transition:all .15s}
+.btn-danger:hover{background:rgba(255,77,106,.08)}
+
+/* Sumário overview */
+.ov-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+.ov-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.ov-stat-label{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.ov-stat-val{font-size:24px;font-weight:600;font-family:var(--mono)}
+.ov-stat-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* Grid de clientes */
+.clients-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.client-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;animation:fadeUp .35s ease both}
+.client-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:var(--shadow)}
+.client-card-top{padding:16px 18px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border)}
+.client-name{font-size:14px;font-weight:600}
+.client-niche{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.semaforo{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.semaforo.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+.semaforo.warn{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.semaforo.bad{background:var(--red);box-shadow:0 0 8px var(--red)}
+.semaforo.none{background:var(--muted)}
+.client-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.client-metric{padding:12px 14px;border-right:1px solid var(--border)}
+.client-metric:last-child{border-right:none}
+.cm-label{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.cm-val{font-size:15px;font-weight:500;font-family:var(--mono)}
+.cm-val.ok{color:var(--green)}.cm-val.warn{color:var(--amber)}.cm-val.bad{color:var(--red)}
+.client-footer{padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)}
+.client-last{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.client-analyze-btn{font-size:11px;color:var(--accent);background:none;border:1px solid rgba(0,201,110,.25);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:var(--mono);transition:all .15s}
+.client-analyze-btn:hover{background:rgba(0,201,110,.1)}
+
+/* Empty state */
+.empty-ov{background:var(--surface);border:2px dashed var(--border2);border-radius:16px;padding:60px 32px;text-align:center}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.6}
+.empty-title{font-size:18px;font-weight:600;margin-bottom:6px}
+.empty-sub{font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:20px}
+
+/* ── PÁGINA ANÁLISE ──────────────────────────────────── */
+.anal-layout{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+
+/* Panel genérico */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.panel-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.panel-body{padding:18px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:5px;letter-spacing:.06em;text-transform:uppercase}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border .12s;resize:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:rgba(0,201,110,.35)}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted)}
+.field select option{background:var(--surface2);color:var(--text)}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.section-lbl{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.mode-tabs{display:flex;gap:3px;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:14px}
+.mode-tab{flex:1;padding:6px;text-align:center;font-size:11px;font-weight:500;border-radius:6px;cursor:pointer;color:var(--muted);transition:all .12s}
 .mode-tab.active{background:var(--surface);color:var(--text);border:1px solid var(--border)}
 
-/* RIGHT PANEL — RESULTS */
-.results-area{display:flex;flex-direction:column;gap:16px}
+.run-btn{width:100%;padding:11px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
+.run-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.run-btn:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed;transform:none}
+.run-btn .spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.run-btn.loading .spinner{display:block}
+.run-btn.loading .btn-label{display:none}
 
-.empty-state{background:var(--surface);border:1px dashed var(--border2);border-radius:12px;padding:60px 32px;text-align:center}
-.empty-icon{width:48px;height:48px;margin:0 auto 16px;opacity:.2}
-.empty-title{font-family:var(--serif);font-size:22px;color:var(--muted);margin-bottom:6px}
-.empty-sub{font-size:12px;color:var(--muted);font-family:var(--mono)}
+/* Client selector chip */
+.client-chip-list{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;max-height:160px;overflow-y:auto}
+.client-chip{padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:8px}
+.client-chip:hover{border-color:var(--border2)}
+.client-chip.selected{border-color:var(--accent);background:rgba(0,201,110,.06)}
+.chip-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.chip-dot.ok{background:var(--green)}.chip-dot.warn{background:var(--amber)}.chip-dot.bad{background:var(--red)}
+.chip-name{font-size:12px;font-weight:500;flex:1}
+.chip-cpr{font-size:10px;color:var(--muted);font-family:var(--mono)}
 
-/* CAMPAIGN CARDS */
+/* Results */
+.results-area{display:flex;flex-direction:column;gap:14px}
+.empty-state{background:var(--surface);border:1px dashed var(--border2);border-radius:12px;padding:56px 32px;text-align:center}
+.empty-state svg{width:44px;height:44px;margin:0 auto 14px;opacity:.2;stroke:currentColor;fill:none}
+.empty-state-title{font-size:18px;font-weight:600;opacity:.4;margin-bottom:5px}
+.empty-state-sub{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+.summary-banner{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;animation:fadeUp .3s ease both}
+.sum-left{display:flex;align-items:center;gap:12px}
+.sum-icon{font-size:20px}
+.sum-text{font-size:13px;color:var(--muted)}
+.sum-text strong{color:var(--text);font-weight:500}
+.sum-stats{display:flex;gap:20px}
+.sstat-item{text-align:right}
+.sstat-val{font-size:18px;font-weight:500;font-family:var(--mono)}
+.sstat-lab{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
 .camp-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;animation:fadeUp .4s ease both}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.camp-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.camp-name{font-weight:500;font-size:14px}
-.camp-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
-.status-badge{font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;font-family:var(--mono)}
-.badge-ok{background:rgba(34,211,165,.12);color:var(--green);border:1px solid rgba(34,211,165,.2)}
-.badge-warn{background:rgba(247,169,79,.12);color:var(--amber);border:1px solid rgba(247,169,79,.2)}
-.badge-bad{background:rgba(247,90,90,.12);color:var(--red);border:1px solid rgba(247,90,90,.2)}
-
+.camp-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.camp-name{font-weight:600;font-size:14px}
+.camp-meta{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.status-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;font-family:var(--mono)}
+.badge-ok{background:rgba(0,229,122,.1);color:var(--green);border:1px solid rgba(0,229,122,.2)}
+.badge-warn{background:rgba(255,179,64,.1);color:var(--amber);border:1px solid rgba(255,179,64,.2)}
+.badge-bad{background:rgba(255,77,106,.1);color:var(--red);border:1px solid rgba(255,77,106,.2)}
 .metrics-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-bottom:1px solid var(--border)}
-.metric-cell{padding:14px 16px;border-right:1px solid var(--border)}
+.metric-cell{padding:12px 14px;border-right:1px solid var(--border)}
 .metric-cell:last-child{border-right:none}
-.metric-cell-label{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:4px}
-.metric-cell-val{font-size:18px;font-weight:500;font-family:var(--mono)}
-.metric-cell-val.ok{color:var(--green)}
-.metric-cell-val.warn{color:var(--amber)}
-.metric-cell-val.bad{color:var(--red)}
-
-.diag-body{padding:20px}
-.diag-section{margin-bottom:16px}
-.diag-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.mc-label{font-size:9px;color:var(--muted);font-family:var(--mono);margin-bottom:3px}
+.mc-val{font-size:17px;font-weight:500;font-family:var(--mono)}
+.mc-val.ok{color:var(--green)}.mc-val.warn{color:var(--amber)}.mc-val.bad{color:var(--red)}
+.diag-body{padding:18px}
+.diag-section{margin-bottom:14px}
+.diag-lbl{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
 .diag-text{font-size:13px;color:var(--text);line-height:1.7}
+.solutions-list{display:flex;flex-direction:column;gap:7px}
+.solution-item{display:flex;align-items:flex-start;gap:11px;background:var(--surface2);border-radius:8px;padding:11px 13px;border:1px solid var(--border)}
+.sol-priority{font-size:10px;font-weight:600;font-family:var(--mono);padding:2px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.sol-p1{background:rgba(255,77,106,.12);color:var(--red)}
+.sol-p2{background:rgba(255,179,64,.12);color:var(--amber)}
+.sol-p3{background:rgba(0,201,110,.12);color:var(--accent)}
+.sol-text{font-size:13px;color:var(--text);line-height:1.5}
+.sol-action{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
 
-.solutions-list{display:flex;flex-direction:column;gap:8px}
-.solution-item{display:flex;align-items:flex-start;gap:12px;background:var(--surface2);border-radius:8px;padding:12px 14px;border:1px solid var(--border)}
-.sol-priority{font-size:10px;font-weight:500;font-family:var(--mono);padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px}
-.sol-p1{background:rgba(247,90,90,.15);color:var(--red)}
-.sol-p2{background:rgba(247,169,79,.15);color:var(--amber)}
-.sol-p3{background:rgba(0,201,110,.15);color:var(--accent)}
-.sol-text{font-size:13px;color:var(--text);line-height:1.6}
-.sol-action{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+.error-box{background:rgba(255,77,106,.07);border:1px solid rgba(255,77,106,.2);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--red);font-family:var(--mono);display:none;margin-bottom:10px}
+.success-box{background:rgba(0,201,110,.07);border:1px solid rgba(0,201,110,.2);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--green);font-family:var(--mono);display:none;margin-bottom:10px}
 
-/* SUMMARY BANNER */
-.summary-banner{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;animation:fadeUp .3s ease both}
-.summary-left{display:flex;align-items:center;gap:12px}
-.summary-icon{font-size:20px}
-.summary-text{font-size:13px;color:var(--muted)}
-.summary-text strong{color:var(--text);font-weight:500}
-.summary-stats{display:flex;gap:20px}
-.stat-item{text-align:right}
-.stat-val{font-size:18px;font-weight:500;font-family:var(--mono)}
-.stat-lab{font-size:10px;color:var(--muted);font-family:var(--mono)}
-
-/* ERROR */
-.error-box{background:rgba(247,90,90,.08);border:1px solid rgba(247,90,90,.2);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--red);font-family:var(--mono);display:none}
-
-/* DEMO badge */
-.demo-note{background:rgba(0,201,110,.08);border:1px solid rgba(0,201,110,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent);font-family:var(--mono);margin-bottom:16px;display:flex;align-items:center;gap:8px}
-
-@media(max-width:800px){
-  .grid-main{grid-template-columns:1fr}
-  .metrics-strip{grid-template-columns:repeat(3,1fr)}
-  .metrics-strip .metric-cell:nth-child(3){border-right:none}
-  .metrics-strip .metric-cell:nth-child(4){border-top:1px solid var(--border)}
-  .metrics-strip .metric-cell:nth-child(5){border-top:1px solid var(--border)}
-  .container{padding:24px 16px}
-}
-
-/* HISTÓRICO */
-.hist-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:16px}
-.hist-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.hist-title{font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.hist-clear{font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:var(--mono);transition:color .15s}
-.hist-clear:hover{color:var(--red)}
-.hist-empty{padding:20px;font-size:12px;color:var(--muted);font-family:var(--mono);text-align:center}
-.hist-list{max-height:320px;overflow-y:auto}
-.hist-item{padding:12px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;display:flex;align-items:flex-start;gap:12px}
+/* ── HISTÓRICO ───────────────────────────────────────── */
+.hist-panel{margin-top:14px}
+.hist-list{max-height:280px;overflow-y:auto}
+.hist-item{padding:11px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;align-items:flex-start;gap:10px}
 .hist-item:last-child{border-bottom:none}
 .hist-item:hover{background:var(--surface2)}
 .hist-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
-.hist-dot-ok{background:var(--green)}
-.hist-dot-warn{background:var(--amber)}
-.hist-dot-bad{background:var(--red)}
+.hist-dot.ok{background:var(--green)}.hist-dot.warn{background:var(--amber)}.hist-dot.bad{background:var(--red)}
 .hist-info{flex:1;min-width:0}
-.hist-date{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:3px}
+.hist-date{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:2px}
 .hist-resumo{font-size:12px;color:var(--text);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hist-meta{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px}
-.hist-badge{font-size:9px;padding:1px 6px;border-radius:10px;font-family:var(--mono);font-weight:500;flex-shrink:0;align-self:center}
-.hist-restore-btn{font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--mono);padding:0;white-space:nowrap;flex-shrink:0;align-self:center}
-
-.send-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center}
-.send-modal-overlay.open{display:flex}
-.send-modal{background:#0d0f13;border:1px solid rgba(0,210,100,.15);border-radius:14px;padding:24px;width:400px;max-width:92vw}
-.send-modal-title{font-size:16px;font-weight:600;margin-bottom:16px;color:#e8eaf0}
-.send-select{width:100%;background:#161b24;border:1px solid rgba(0,210,100,.12);border-radius:8px;padding:10px 12px;color:#e8eaf0;font-family:'Geist',sans-serif;font-size:13px;outline:none;margin-bottom:12px}
-.send-field{margin-bottom:12px}
-.send-field label{display:block;font-size:11px;color:#6b7280;font-family:monospace;margin-bottom:5px;letter-spacing:.06em}
-.send-field input{width:100%;background:#161b24;border:1px solid rgba(0,210,100,.12);border-radius:8px;padding:9px 12px;color:#e8eaf0;font-family:'Geist',sans-serif;font-size:13px;outline:none}
-.send-btns{display:flex;gap:8px;margin-top:16px}
-.send-btn-primary{flex:1;padding:10px;background:#00c96e;border:none;border-radius:8px;color:#fff;font-family:'Geist',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
-.send-btn-primary:disabled{opacity:.6;cursor:not-allowed}
-.send-btn-ghost{padding:10px 14px;background:none;border:1px solid rgba(0,210,100,.12);border-radius:8px;color:#8892a4;font-family:'Geist',sans-serif;font-size:13px;cursor:pointer}
-.send-success{font-size:12px;color:#22d3a5;font-family:monospace;margin-top:8px;display:none}
-.hist-send-btn{font-size:10px;color:#00c96e;background:none;border:1px solid rgba(0,201,110,.3);border-radius:4px;padding:2px 7px;cursor:pointer;font-family:monospace;white-space:nowrap;flex-shrink:0;align-self:center;margin-left:6px;transition:all .15s}
+.hist-meta{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.hist-send-btn{font-size:10px;color:var(--accent);background:none;border:1px solid rgba(0,201,110,.25);border-radius:4px;padding:2px 7px;cursor:pointer;font-family:var(--mono);white-space:nowrap;flex-shrink:0;align-self:center;transition:all .12s}
 .hist-send-btn:hover{background:rgba(0,201,110,.1)}
+.hist-clear{font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:var(--mono);transition:color .12s}
+.hist-clear:hover{color:var(--red)}
+.hist-empty{padding:18px;font-size:12px;color:var(--muted);font-family:var(--mono);text-align:center}
 
+/* ── PÁGINA CONTAS ───────────────────────────────────── */
+.accounts-layout{display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start}
+.accounts-list{display:flex;flex-direction:column;gap:10px}
+.account-row{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:all .15s}
+.account-row:hover{border-color:var(--border2)}
+.account-avatar{width:36px;height:36px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.account-info{flex:1;min-width:0}
+.account-name{font-size:14px;font-weight:600}
+.account-niche{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.account-stats{display:flex;gap:16px;margin-top:4px}
+.account-stat{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.account-stat span{color:var(--text);font-weight:500}
+.account-actions{display:flex;gap:6px;flex-shrink:0}
+.account-edit-btn{font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:4px 9px;cursor:pointer;font-family:var(--mono);transition:all .12s}
+.account-edit-btn:hover{border-color:var(--border2);color:var(--text)}
+
+/* Formulário nova conta */
+.add-panel .panel-body{padding:20px}
+.form-title{font-size:14px;font-weight:600;margin-bottom:16px}
+
+/* ── CONFIGURAÇÕES (Telegram, Claude key, Supabase) ──── */
+.settings-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.settings-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.settings-title{font-size:12px;font-weight:600;letter-spacing:.04em;margin-bottom:4px;display:flex;align-items:center;gap:7px}
+.settings-sub{font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+.settings-save-btn{width:100%;padding:10px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;margin-top:4px}
+.settings-save-btn:hover{background:var(--accent2)}
+.tg-test-btn{width:100%;padding:9px;background:none;border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;cursor:pointer;transition:all .15s;margin-top:6px}
+.tg-test-btn:hover{background:var(--surface2)}
+
+/* ── PRIVACIDADE (blur) ──────────────────────────────── */
+body.privacy .priv{filter:blur(5px);user-select:none;pointer-events:none}
+
+/* ── MODAIS ──────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:24px;width:440px;max-width:92vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:18px}
+.modal-btns{display:flex;gap:8px;margin-top:18px}
+.modal-btn-primary{flex:1;padding:10px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.modal-btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.modal-btn-ghost{padding:10px 14px;background:none;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:var(--sans);font-size:13px;cursor:pointer}
+
+/* ── RESPONSIVO ──────────────────────────────────────── */
+@media(max-width:900px){
+  .anal-layout,.accounts-layout,.settings-layout{grid-template-columns:1fr}
+  .metrics-strip{grid-template-columns:repeat(3,1fr)}
+  .metrics-strip .metric-cell:nth-child(3){border-right:none}
+  .metrics-strip .metric-cell:nth-child(4),.metrics-strip .metric-cell:nth-child(5){border-top:1px solid var(--border)}
+  .ov-stats{grid-template-columns:repeat(2,1fr)}
+  .container{padding:20px 16px}
+  .hdr,.nav-tabs{padding-left:16px;padding-right:16px}
+}
 </style>
 </head>
 <body>
 
-<header class="header">
+<!-- HEADER -->
+<header class="hdr">
   <div class="logo">
     <div class="logo-dot"></div>
     <div>
       <div class="logo-name">Meta Intelligence</div>
-      <div class="logo-tag" style="color:var(--accent);opacity:.9;font-family:'JetBrains Mono',monospace">by Alexsander · RASC</div>
+      <div class="logo-tag">v2 · by RASC</div>
     </div>
   </div>
-  <div class="header-right">
-    <div class="status-pill" id="conn-status">
-      <div class="status-dot" id="conn-dot"></div>
-      <span id="conn-label">desconectado</span>
+  <div class="hdr-right">
+    <button class="privacy-btn" id="privacy-btn" onclick="togglePrivacy()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      Privacidade
+    </button>
+    <div class="conn-pill">
+      <div class="conn-dot" id="conn-dot"></div>
+      <span id="conn-label">offline</span>
     </div>
+    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Alternar tema">
+      <svg id="moon-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="sun-icon" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
   </div>
 </header>
 
-<div class="container">
-  <div class="grid-main">
+<!-- NAV TABS -->
+<nav class="nav-tabs">
+  <div class="nav-tab active" onclick="goPage('dashboard')">📊 Dashboard</div>
+  <div class="nav-tab" onclick="goPage('analise')">🔍 Análise</div>
+  <div class="nav-tab" onclick="goPage('contas')">🏢 Contas</div>
+  <div class="nav-tab" onclick="goPage('configuracoes')">⚙️ Configurações</div>
+</nav>
 
-    <!-- SETUP PANEL -->
-    <div>
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">Configuração</div>
+<!-- ══════════════════════════════════════════════════════
+     PÁGINA 1 — DASHBOARD OVERVIEW
+═══════════════════════════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="container">
+    <div class="ov-header">
+      <div>
+        <div class="ov-title">Visão Geral</div>
+        <div class="ov-sub" id="ov-sub">Todos os seus clientes em um lugar</div>
+      </div>
+      <button class="btn-primary" onclick="goPage('contas')">+ Novo Cliente</button>
+    </div>
+
+    <!-- Stats rápidas -->
+    <div class="ov-stats">
+      <div class="ov-stat">
+        <div class="ov-stat-label">Clientes ativos</div>
+        <div class="ov-stat-val priv" id="ov-total-clients">—</div>
+        <div class="ov-stat-sub" id="ov-clients-sub">Cadastrados</div>
+      </div>
+      <div class="ov-stat">
+        <div class="ov-stat-label">Gasto Total</div>
+        <div class="ov-stat-val priv" id="ov-total-spend">R$ —</div>
+        <div class="ov-stat-sub">Última análise por cliente</div>
+      </div>
+      <div class="ov-stat">
+        <div class="ov-stat-label">CPR Médio</div>
+        <div class="ov-stat-val priv" id="ov-avg-cpr">R$ —</div>
+        <div class="ov-stat-sub">Ponderado por gasto</div>
+      </div>
+      <div class="ov-stat">
+        <div class="ov-stat-label">Alertas</div>
+        <div class="ov-stat-val" id="ov-alerts" style="color:var(--red)">—</div>
+        <div class="ov-stat-sub">Campanhas críticas</div>
+      </div>
+    </div>
+
+    <!-- Grid de clientes -->
+    <div id="clients-grid-wrap"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PÁGINA 2 — ANÁLISE
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-analise">
+  <div class="container">
+    <div class="anal-layout">
+
+      <!-- Coluna esquerda -->
+      <div>
+        <div class="panel">
+          <div class="panel-hdr"><span class="panel-title">Configuração</span></div>
+          <div class="panel-body">
+
+            <div class="mode-tabs">
+              <div class="mode-tab active" id="tab-live" onclick="setMode('live')">API Real</div>
+              <div class="mode-tab" id="tab-demo" onclick="setMode('demo')">Demo</div>
+            </div>
+
+            <!-- Seletor de cliente -->
+            <div id="client-selector-wrap">
+              <div class="section-lbl">Cliente</div>
+              <div class="client-chip-list" id="client-chip-list">
+                <div style="font-size:12px;color:var(--muted);font-family:var(--mono);text-align:center;padding:10px">
+                  Nenhum cliente cadastrado.<br>
+                  <span style="color:var(--accent);cursor:pointer" onclick="goPage('contas')">Cadastrar agora →</span>
+                </div>
+              </div>
+              <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:12px">
+                Ou use credenciais manuais abaixo
+              </div>
+            </div>
+
+            <!-- Credenciais manuais (collapsible) -->
+            <div id="manual-creds-wrap">
+              <details id="manual-details">
+                <summary style="font-size:10px;color:var(--muted);font-family:var(--mono);cursor:pointer;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;list-style:none">▶ Credenciais Manuais</summary>
+                <div style="padding-top:8px">
+                  <div class="field">
+                    <label style="display:flex;justify-content:space-between">META ACCESS TOKEN <span id="saved-token" style="display:none;color:var(--green)">● salvo</span></label>
+                    <input type="password" id="meta-token" placeholder="EAAxxxxx..." oninput="saveCredentials()">
+                  </div>
+                  <div class="field">
+                    <label style="display:flex;justify-content:space-between">AD ACCOUNT ID <span id="saved-account" style="display:none;color:var(--green)">● salvo</span></label>
+                    <input type="text" id="ad-account" placeholder="act_123456789" oninput="saveCredentials()">
+                  </div>
+                  <div class="field">
+                    <label style="display:flex;justify-content:space-between">ANTHROPIC KEY <span id="saved-claude" style="display:none;color:var(--green)">● salvo</span></label>
+                    <input type="password" id="claude-key" placeholder="sk-ant-..." oninput="saveCredentials()">
+                  </div>
+                  <div style="text-align:right;margin-top:-4px;margin-bottom:4px">
+                    <button onclick="clearCredentials()" style="font-size:11px;background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--mono)">limpar</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            <div class="divider"></div>
+            <div class="section-lbl">Parâmetros</div>
+
+            <div class="field">
+              <label>PERÍODO</label>
+              <select id="date-preset">
+                <option value="yesterday">Ontem</option>
+                <option value="last_7d" selected>Últimos 7 dias</option>
+                <option value="last_14d">Últimos 14 dias</option>
+                <option value="last_30d">Últimos 30 dias</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>META CPR (R$)</label>
+              <input type="number" id="target-cpr" placeholder="3.00" step="0.5" value="3.00">
+            </div>
+            <div class="field">
+              <label>CONTEXTO (opcional)</label>
+              <input type="text" id="client-ctx" placeholder="loja de eletrônicos, Brasília">
+            </div>
+
+            <div class="divider"></div>
+            <div class="section-lbl">Análise</div>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px">
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px"><input type="checkbox" id="chk-diag" checked style="width:auto;accent-color:var(--accent)"> Diagnóstico geral</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px"><input type="checkbox" id="chk-budget" checked style="width:auto;accent-color:var(--accent)"> Orçamento e bid</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px"><input type="checkbox" id="chk-creative" checked style="width:auto;accent-color:var(--accent)"> Análise de criativos</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px"><input type="checkbox" id="chk-audience" checked style="width:auto;accent-color:var(--accent)"> Segmentação e público</label>
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px"><input type="checkbox" id="chk-steps" checked style="width:auto;accent-color:var(--accent)"> Próximos passos</label>
+            </div>
+
+            <div class="error-box" id="error-box"></div>
+            <button class="run-btn" id="run-btn" onclick="runAnalysis()">
+              <div class="spinner"></div>
+              <span class="btn-label">⚡ Buscar e Analisar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Histórico -->
+        <div class="panel hist-panel">
+          <div class="panel-hdr">
+            <span class="panel-title">Histórico</span>
+            <button class="hist-clear" onclick="clearHistory()">limpar tudo</button>
+          </div>
+          <div id="hist-list-wrap">
+            <div class="hist-empty" id="hist-empty">Nenhuma análise salva ainda</div>
+            <div class="hist-list" id="hist-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna direita — Resultados -->
+      <div class="results-area" id="results-area">
+        <div class="empty-state">
+          <svg viewBox="0 0 48 48"><rect x="4" y="8" width="40" height="32" rx="4" stroke-width="2"/><path d="M16 28l6-8 5 6 4-5 6 7" stroke-width="2"/><circle cx="14" cy="20" r="3" stroke-width="1.5"/></svg>
+          <div class="empty-state-title">Aguardando análise</div>
+          <div class="empty-state-sub">Selecione um cliente ou configure as credenciais</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PÁGINA 3 — CONTAS
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-contas">
+  <div class="container">
+    <div class="accounts-layout">
+      <!-- Lista -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div>
+            <div style="font-size:20px;font-weight:600">Gestão de Clientes</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px">Credenciais salvas localmente</div>
+          </div>
+        </div>
+        <div class="accounts-list" id="accounts-list">
+          <div style="background:var(--surface);border:2px dashed var(--border2);border-radius:12px;padding:40px;text-align:center">
+            <div style="font-size:32px;margin-bottom:10px">🏢</div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px">Nenhum cliente ainda</div>
+            <div style="font-size:12px;color:var(--muted);font-family:var(--mono)">Preencha o formulário ao lado para cadastrar</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulário -->
+      <div class="panel add-panel" id="add-panel">
+        <div class="panel-hdr">
+          <span class="panel-title" id="form-panel-title">Novo Cliente</span>
+          <button class="btn-ghost" id="form-cancel-btn" style="display:none;font-size:11px;padding:4px 10px" onclick="cancelEdit()">Cancelar</button>
         </div>
         <div class="panel-body">
-
-          <div class="mode-tabs">
-            <div class="mode-tab active" id="tab-live" onclick="setMode('live')">API Real</div>
-            <div class="mode-tab" id="tab-demo" onclick="setMode('demo')">Demo</div>
+          <input type="hidden" id="edit-client-id">
+          <div class="field">
+            <label>Nome do Cliente *</label>
+            <input type="text" id="f-name" placeholder="Ex: César Imports DF">
           </div>
-
-          <div id="live-fields">
-            <div class="field">
-              <label style="display:flex;justify-content:space-between;align-items:center">META ACCESS TOKEN <span id="saved-token" style="display:none;font-size:10px;color:#22d3a5;font-family:monospace">● salvo</span></label>
-              <input type="password" id="meta-token" placeholder="EAAxxxxx..." oninput="saveCredentials()">
-            </div>
-            <div class="field">
-              <label style="display:flex;justify-content:space-between;align-items:center">AD ACCOUNT ID <span id="saved-account" style="display:none;font-size:10px;color:#22d3a5;font-family:monospace">● salvo</span></label>
-              <input type="text" id="ad-account" placeholder="act_123456789" oninput="saveCredentials()">
-            </div>
-            <div class="field">
-              <label style="display:flex;justify-content:space-between;align-items:center">ANTHROPIC API KEY <span id="saved-claude" style="display:none;font-size:10px;color:#22d3a5;font-family:monospace">● salvo</span></label>
-              <input type="password" id="claude-key" placeholder="sk-ant-..." oninput="saveCredentials()">
-            </div>
-            <div style="display:flex;justify-content:flex-end;margin-top:-4px;margin-bottom:4px">
-              <button onclick="clearCredentials()" style="font-size:11px;background:none;border:none;color:#6b7280;cursor:pointer;font-family:monospace;padding:0">limpar credenciais</button>
-            </div>
+          <div class="field">
+            <label>Nicho / Segmento</label>
+            <input type="text" id="f-niche" placeholder="Ex: Eletrônicos, Brasília">
           </div>
-
+          <div class="field">
+            <label>Emoji / Avatar</label>
+            <input type="text" id="f-emoji" placeholder="🏪" maxlength="2" style="width:60px">
+          </div>
           <div class="divider"></div>
-          <div class="section-label">Parâmetros</div>
-
           <div class="field">
-            <label>PERÍODO</label>
-            <select id="date-preset">
-              <option value="yesterday">Ontem</option>
-              <option value="last_7d" selected>Últimos 7 dias</option>
-              <option value="last_14d">Últimos 14 dias</option>
-              <option value="last_30d">Últimos 30 dias</option>
-            </select>
+            <label>Meta Access Token *</label>
+            <input type="password" id="f-token" placeholder="EAAxxxxx...">
           </div>
-
           <div class="field">
-            <label>META CPR (R$) — custo por resultado alvo</label>
-            <input type="number" id="target-cpr" placeholder="Ex: 3.00" step="0.5" value="3.00">
+            <label>Ad Account ID *</label>
+            <input type="text" id="f-account" placeholder="act_123456789">
           </div>
-
-          <div class="field">
-            <label>CONTEXTO DO CLIENTE (opcional)</label>
-            <input type="text" id="client-ctx" placeholder="Ex: loja de eletrônicos, Brasília">
-          </div>
-
           <div class="divider"></div>
-          <div class="section-label">Análise solicitada</div>
-
-          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
-              <input type="checkbox" id="chk-diag" checked style="width:auto"> Diagnóstico geral
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
-              <input type="checkbox" id="chk-budget" checked style="width:auto"> Ajuste de orçamento e bid
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
-              <input type="checkbox" id="chk-creative" checked style="width:auto"> Análise de criativos
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
-              <input type="checkbox" id="chk-audience" checked style="width:auto"> Segmentação e público
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
-              <input type="checkbox" id="chk-steps" checked style="width:auto"> Próximos passos
-            </label>
+          <div class="field">
+            <label>Meta CPR Alvo (R$)</label>
+            <input type="number" id="f-cpr" placeholder="3.00" step="0.5" value="3.00">
           </div>
-
-          <div class="error-box" id="error-box"></div>
-
-          <button class="run-btn" id="run-btn" onclick="runAnalysis()">
-            <div class="spinner"></div>
-            <span class="btn-label">Buscar e Analisar</span>
-          </button>
+          <div class="field">
+            <label>Contexto para Claude</label>
+            <input type="text" id="f-ctx" placeholder="loja de iphones, Brasília">
+          </div>
+          <div class="error-box" id="form-error"></div>
+          <button class="btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="saveClient()" id="save-client-btn">Salvar Cliente</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
 
-      <!-- HISTÓRICO DE ANÁLISES -->
-      <div class="hist-panel" id="hist-panel">
-        <div class="hist-header">
-          <span class="hist-title">Histórico</span>
-          <button class="hist-clear" onclick="clearHistory()">limpar tudo</button>
+<!-- ══════════════════════════════════════════════════════
+     PÁGINA 4 — CONFIGURAÇÕES
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-configuracoes">
+  <div class="container">
+    <div style="font-size:20px;font-weight:600;margin-bottom:20px">Configurações</div>
+    <div class="settings-layout">
+
+      <!-- Claude Key global -->
+      <div class="settings-section">
+        <div class="settings-title">🤖 Anthropic API Key</div>
+        <div class="settings-sub">Chave global usada em todas as análises. Salva localmente no seu navegador.</div>
+        <div class="field">
+          <label>API KEY</label>
+          <input type="password" id="s-claude-key" placeholder="sk-ant-...">
         </div>
-        <div id="hist-list-wrap">
-          <div class="hist-empty" id="hist-empty">Nenhuma análise salva ainda</div>
-          <div class="hist-list" id="hist-list"></div>
+        <button class="settings-save-btn" onclick="saveGlobalKey()">Salvar chave</button>
+        <div class="success-box" id="s-claude-ok" style="margin-top:8px">✓ Chave salva!</div>
+      </div>
+
+      <!-- Telegram -->
+      <div class="settings-section">
+        <div class="settings-title">📲 Alertas Telegram</div>
+        <div class="settings-sub">Configure uma vez e envie relatórios de qualquer análise com 1 clique. Gratuito, sem N8N, sem Evolution API.</div>
+        <div class="field">
+          <label>BOT TOKEN</label>
+          <input type="password" id="s-tg-token" placeholder="123456789:AAxxxxxx...">
         </div>
+        <div class="field">
+          <label>CHAT ID</label>
+          <input type="text" id="s-tg-chat" placeholder="Ex: 987654321">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px">
+            Envie /start para @userinfobot para descobrir seu Chat ID
+          </div>
+        </div>
+        <button class="settings-save-btn" onclick="saveTelegram()">Salvar configuração</button>
+        <button class="tg-test-btn" onclick="testTelegram()">📤 Enviar mensagem de teste</button>
+        <div class="success-box" id="s-tg-ok" style="margin-top:8px">✓ Configuração salva!</div>
+        <div class="error-box" id="s-tg-err" style="margin-top:8px"></div>
+      </div>
+
+      <!-- Supabase -->
+      <div class="settings-section">
+        <div class="settings-title">🗄️ Supabase</div>
+        <div class="settings-sub">Banco de dados conectado. Todos os dados são salvos na nuvem automaticamente.</div>
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:6px">PROJETO</div>
+          <div style="font-size:12px;font-family:var(--mono);color:var(--text)">odmopyluudtndpaicobp</div>
+          <div style="font-size:10px;color:var(--green);font-family:var(--mono);margin-top:4px" id="supa-status-label">● Verificando conexão…</div>
+        </div>
+        <button class="settings-save-btn" onclick="testSupabaseConnection()">Testar conexão</button>
+        <div class="success-box" id="s-supa-ok" style="margin-top:8px">✓ Supabase conectado!</div>
+      </div>
+
+      <!-- Info -->
+      <div class="settings-section">
+        <div class="settings-title">ℹ️ Sobre</div>
+        <div class="settings-sub">Meta Intelligence v2.0 — RASC Agency<br>Desenvolvido por Alexsander</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);line-height:1.8">
+          🔒 Todos os dados salvos localmente<br>
+          📊 Meta Ads Graph API v19.0<br>
+          🤖 Claude Sonnet (Anthropic)<br>
+          📲 Telegram Bot API (gratuito)
+        </div>
+        <div class="divider"></div>
+        <button class="btn-danger" style="width:100%" onclick="clearAllData()">🗑 Limpar todos os dados</button>
       </div>
 
     </div>
+  </div>
+</div>
 
-    <!-- RESULTS PANEL -->
-    <div class="results-area" id="results-area">
-      <div class="empty-state">
-        <svg class="empty-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="4" y="8" width="40" height="32" rx="4" stroke="currentColor" stroke-width="2"/>
-          <path d="M16 28l6-8 5 6 4-5 6 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="14" cy="20" r="3" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        <div class="empty-title">Aguardando análise</div>
-        <div class="empty-sub">Configure as credenciais e clique em Buscar e Analisar</div>
-      </div>
+<!-- MODAL CONFIRMAÇÃO DELETE -->
+<div class="modal-overlay" id="delete-modal" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal">
+    <div class="modal-title">🗑 Remover cliente?</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:4px" id="delete-modal-name"></div>
+    <div style="font-size:12px;color:var(--muted);font-family:var(--mono)">Todas as credenciais serão apagadas. O histórico de análises permanece.</div>
+    <div class="modal-btns">
+      <button class="modal-btn-ghost" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="modal-btn-primary" style="background:var(--red)" onclick="confirmDelete()" id="delete-confirm-btn">Remover</button>
     </div>
+  </div>
+</div>
 
+<!-- MODAL TELEGRAM ANÁLISE -->
+<div class="modal-overlay" id="tg-modal" onclick="if(event.target===this)closeTgModal()">
+  <div class="modal">
+    <div class="modal-title">📲 Enviar para Telegram</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Envie o relatório desta análise diretamente para o seu Telegram.</div>
+    <div class="field">
+      <label>MENSAGEM PERSONALIZADA (opcional)</label>
+      <textarea id="tg-custom-msg" rows="3" placeholder="Ex: Análise semana 20/05 — César Imports"></textarea>
+    </div>
+    <div class="error-box" id="tg-modal-err"></div>
+    <div class="modal-btns">
+      <button class="modal-btn-ghost" onclick="closeTgModal()">Cancelar</button>
+      <button class="modal-btn-primary" onclick="confirmSendTelegram()" id="tg-send-btn">📤 Enviar agora</button>
+    </div>
   </div>
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════════
+//  CONSTANTES
+// ═══════════════════════════════════════════════════════
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
-const META_API = 'https://graph.facebook.com/v19.0';
+const META_API   = 'https://graph.facebook.com/v19.0';
 
-let currentMode = 'live';
+// ── SUPABASE ─────────────────────────────────────────
+const SUPA_URL  = 'https://odmopyluudtndpaicobp.supabase.co';
+const SUPA_KEY  = 'sb_publishable_iWHVpdNaYC39qrULD8rURA_hBUCcowh';
+const USER_ID   = 'alexsander_rasc'; // ID fixo — single user
 
-function setMode(m) {
-  currentMode = m;
-  document.getElementById('tab-live').classList.toggle('active', m === 'live');
-  document.getElementById('tab-demo').classList.toggle('active', m === 'demo');
-  document.getElementById('live-fields').style.opacity = m === 'live' ? '1' : '0.4';
-  document.getElementById('live-fields').style.pointerEvents = m === 'live' ? 'all' : 'none';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// localStorage apenas para tema e credenciais legado (não sensitivo)
+const LKEYS = {
+  theme:    'mi2_theme',
+  legToken:   'mi_meta_token',
+  legAccount: 'mi_ad_account',
+  legClaude:  'mi_claude_key',
+};
+
+let currentMode      = 'live';
+let selectedClientId = null;
+let pendingDeleteId  = null;
+let pendingTgEntry   = null;
+let _clientsCache    = null;   // cache em memória para evitar fetches repetidos
+let _histCache       = null;
+let _configCache     = null;
+
+// ── HELPERS SUPABASE ──────────────────────────────────
+async function sbFetchClients() {
+  const { data, error } = await sb.from('clientes').select('*').eq('user_id', USER_ID).order('created_at');
+  if (error) { console.error('sbFetchClients:', error); return []; }
+  _clientsCache = data || [];
+  return _clientsCache;
 }
 
+async function sbSaveClient(client) {
+  const row = { user_id: USER_ID, name: client.name, niche: client.niche||'', emoji: client.emoji||'🏢', token: client.token, acct: client.acct, cpr: client.cpr||3, ctx: client.ctx||'', last_analysis: client.lastAnalysis||null };
+  if (client.id && !client.id.startsWith('c')) {
+    // UUID real do Supabase — update
+    const { error } = await sb.from('clientes').update(row).eq('id', client.id);
+    if (error) throw error;
+  } else {
+    const { error } = await sb.from('clientes').insert([row]);
+    if (error) throw error;
+  }
+  _clientsCache = null;
+}
+
+async function sbUpdateClientAnalysis(clientId, lastAnalysis) {
+  const { error } = await sb.from('clientes').update({ last_analysis: lastAnalysis }).eq('id', clientId).eq('user_id', USER_ID);
+  if (error) console.error('sbUpdateClientAnalysis:', error);
+  _clientsCache = null;
+}
+
+async function sbDeleteClient(id) {
+  const { error } = await sb.from('clientes').delete().eq('id', id).eq('user_id', USER_ID);
+  if (error) throw error;
+  _clientsCache = null;
+}
+
+async function sbFetchHistory() {
+  const { data, error } = await sb.from('analises').select('*').eq('user_id', USER_ID).order('ts', { ascending: false }).limit(15);
+  if (error) { console.error('sbFetchHistory:', error); return []; }
+  _histCache = (data || []).map(r => ({ ...r, id: r.id, ts: r.ts, resumo: r.resumo, total_spend: r.total_spend, total_results: r.total_results, avg_cpr: r.avg_cpr, targetCpr: r.target_cpr, n_camps: r.n_camps, critical: r.critical, warn: r.warn, overall: r.overall, campaigns: r.campaigns, analysis: r.analysis, clientName: r.client_name||'', clientCtx: '' }));
+  return _histCache;
+}
+
+async function sbSaveHistory(entry) {
+  const row = { user_id: USER_ID, client_id: selectedClientId||null, client_name: entry.clientName||'', ts: entry.ts, date_preset: entry.datePreset||'', resumo: entry.resumo, total_spend: entry.total_spend, total_results: entry.total_results, avg_cpr: entry.avg_cpr, target_cpr: entry.targetCpr||null, n_camps: entry.n_camps, critical: entry.critical, warn: entry.warn, overall: entry.overall, campaigns: entry.campaigns, analysis: entry.analysis };
+  const { data, error } = await sb.from('analises').insert([row]).select().single();
+  if (error) throw error;
+  _histCache = null;
+  return { ...entry, id: data.id };
+}
+
+async function sbClearHistory() {
+  const { error } = await sb.from('analises').delete().eq('user_id', USER_ID);
+  if (error) throw error;
+  _histCache = null;
+}
+
+async function sbLoadConfig() {
+  const { data } = await sb.from('configuracoes').select('*').eq('user_id', USER_ID).single();
+  _configCache = data || {};
+  return _configCache;
+}
+
+async function sbSaveConfig(patch) {
+  const current = _configCache || {};
+  const row = { user_id: USER_ID, ...current, ...patch, updated_at: new Date().toISOString() };
+  const { error } = await sb.from('configuracoes').upsert([row], { onConflict: 'user_id' });
+  if (error) throw error;
+  _configCache = { ..._configCache, ...patch };
+}
+
+// Wrappers síncronos para compatibilidade com código existente (usa cache)
+function getClients() { return _clientsCache || []; }
+function getHistory()  { return _histCache   || []; }
+function getConfig()   { return _configCache  || {}; }
+
+// ═══════════════════════════════════════════════════════
+//  NAVEGAÇÃO
+// ═══════════════════════════════════════════════════════
+async function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach((t, i) => {
+    const pages = ['dashboard','analise','contas','configuracoes'];
+    t.classList.toggle('active', pages[i] === name);
+  });
+  // Refetch fresco ao trocar de página
+  if (name === 'dashboard')      { await sbFetchClients(); renderDashboard(); }
+  if (name === 'analise')        { await sbFetchHistory(); renderClientChips(); renderHistory(); }
+  if (name === 'contas')         { await sbFetchClients(); renderAccounts(); }
+  if (name === 'configuracoes')  { await loadSettings(); }
+}
+
+// ═══════════════════════════════════════════════════════
+//  TEMA
+// ═══════════════════════════════════════════════════════
+function initTheme() {
+  applyTheme(localStorage.getItem(LKEYS.theme) || 'dark');
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  applyTheme(cur); localStorage.setItem(LKEYS.theme, cur);
+}
+function applyTheme(t) {
+  if (t === 'light') { document.documentElement.setAttribute('data-theme','light'); document.getElementById('moon-icon').style.display='none'; document.getElementById('sun-icon').style.display='block'; }
+  else { document.documentElement.removeAttribute('data-theme'); document.getElementById('moon-icon').style.display='block'; document.getElementById('sun-icon').style.display='none'; }
+}
+
+// ═══════════════════════════════════════════════════════
+//  PRIVACIDADE
+// ═══════════════════════════════════════════════════════
+function togglePrivacy() {
+  const on = document.body.classList.toggle('privacy');
+  const btn = document.getElementById('privacy-btn');
+  btn.classList.toggle('active', on);
+  btn.innerHTML = on
+    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Visível'
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Privacidade';
+}
+
+// ═══════════════════════════════════════════════════════
+//  STATUS
+// ═══════════════════════════════════════════════════════
 function setStatus(live, label) {
-  const dot = document.getElementById('conn-dot');
-  const lbl = document.getElementById('conn-label');
-  dot.className = 'status-dot' + (live ? ' live' : '');
-  lbl.textContent = label;
+  document.getElementById('conn-dot').className = 'conn-dot' + (live ? ' live' : '');
+  document.getElementById('conn-label').textContent = label;
 }
 
-function showError(msg) {
-  const b = document.getElementById('error-box');
-  b.textContent = msg;
-  b.style.display = 'block';
-  setTimeout(() => b.style.display = 'none', 6000);
+// ═══════════════════════════════════════════════════════
+//  CLIENTES — CRUD
+// ═══════════════════════════════════════════════════════
+function getClients() {
+  return _clientsCache || [];
+}
+// saveClients: substituído por sbSaveClient
+
+async function saveClient() {
+  const id    = document.getElementById('edit-client-id').value;
+  const name  = document.getElementById('f-name').value.trim();
+  const niche = document.getElementById('f-niche').value.trim();
+  const emoji = document.getElementById('f-emoji').value.trim() || '🏢';
+  const token = document.getElementById('f-token').value.trim();
+  const acct  = document.getElementById('f-account').value.trim();
+  const cpr   = parseFloat(document.getElementById('f-cpr').value) || 3;
+  const ctx   = document.getElementById('f-ctx').value.trim();
+  const errEl = document.getElementById('form-error');
+  const btn   = document.getElementById('save-client-btn');
+
+  if (!name) { errEl.textContent='Nome é obrigatório'; errEl.style.display='block'; return; }
+  if (!token || !acct) { errEl.textContent='Token e Ad Account são obrigatórios'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  btn.disabled=true; btn.textContent='Salvando…';
+
+  try {
+    await sbSaveClient({ id, name, niche, emoji, token, acct, cpr, ctx });
+    await sbFetchClients();
+    clearForm();
+    renderAccounts();
+    renderDashboard();
+    renderClientChips();
+  } catch(e) {
+    errEl.textContent='Erro ao salvar: ' + e.message; errEl.style.display='block';
+  } finally {
+    btn.disabled=false; btn.textContent = id ? 'Salvar alterações' : 'Salvar Cliente';
+  }
 }
 
-// ── DEMO DATA ──────────────────────────────────────────
+function editClient(id) {
+  const c = getClients().find(c => c.id === id);
+  if (!c) return;
+  document.getElementById('edit-client-id').value = id;
+  document.getElementById('f-name').value    = c.name;
+  document.getElementById('f-niche').value   = c.niche || '';
+  document.getElementById('f-emoji').value   = c.emoji || '🏢';
+  document.getElementById('f-token').value   = c.token;
+  document.getElementById('f-account').value = c.acct;
+  document.getElementById('f-cpr').value     = c.cpr || 3;
+  document.getElementById('f-ctx').value     = c.ctx || '';
+  document.getElementById('form-panel-title').textContent = 'Editar Cliente';
+  document.getElementById('form-cancel-btn').style.display = 'block';
+  document.getElementById('save-client-btn').textContent = 'Salvar alterações';
+  document.getElementById('add-panel').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function cancelEdit() {
+  clearForm();
+}
+
+function clearForm() {
+  ['edit-client-id','f-name','f-niche','f-token','f-account','f-ctx'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-emoji').value = '';
+  document.getElementById('f-cpr').value = '3.00';
+  document.getElementById('form-panel-title').textContent = 'Novo Cliente';
+  document.getElementById('form-cancel-btn').style.display = 'none';
+  document.getElementById('save-client-btn').textContent = 'Salvar Cliente';
+  document.getElementById('form-error').style.display = 'none';
+}
+
+function openDeleteModal(id) {
+  const c = getClients().find(c => c.id === id);
+  if (!c) return;
+  pendingDeleteId = id;
+  document.getElementById('delete-modal-name').textContent = c.emoji + ' ' + c.name;
+  document.getElementById('delete-modal').classList.add('open');
+}
+function closeDeleteModal() { document.getElementById('delete-modal').classList.remove('open'); pendingDeleteId = null; }
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  const btn = document.getElementById('delete-confirm-btn');
+  btn.disabled=true; btn.textContent='Removendo…';
+  try {
+    await sbDeleteClient(pendingDeleteId);
+    await sbFetchClients();
+    if (selectedClientId === pendingDeleteId) selectedClientId = null;
+    closeDeleteModal();
+    renderAccounts();
+    renderDashboard();
+    renderClientChips();
+  } catch(e) {
+    alert('Erro ao remover: ' + e.message);
+    btn.disabled=false; btn.textContent='Remover';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDERIZAÇÕES
+// ═══════════════════════════════════════════════════════
+function renderAccounts() {
+  const clients = getClients();
+  const el = document.getElementById('accounts-list');
+  if (!clients.length) {
+    el.innerHTML = '<div style="background:var(--surface);border:2px dashed var(--border2);border-radius:12px;padding:40px;text-align:center"><div style="font-size:32px;margin-bottom:10px">🏢</div><div style="font-size:14px;font-weight:600;margin-bottom:6px">Nenhum cliente ainda</div><div style="font-size:12px;color:var(--muted);font-family:var(--mono)">Preencha o formulário ao lado</div></div>';
+    return;
+  }
+  el.innerHTML = clients.map(c => {
+    const last = c.lastAnalysis;
+    const statusDot = last ? (last.overall === 'ok' ? '🟢' : last.overall === 'warn' ? '🟡' : '🔴') : '⚪';
+    const cprTxt = last ? 'R$ ' + last.avg_cpr.toFixed(2) : '—';
+    const spendTxt = last ? 'R$ ' + last.total_spend.toFixed(2) : '—';
+    return `<div class="account-row">
+      <div class="account-avatar">${c.emoji || '🏢'}</div>
+      <div class="account-info">
+        <div class="account-name">${statusDot} ${c.name}</div>
+        <div class="account-niche">${c.niche || 'Sem nicho definido'}</div>
+        <div class="account-stats">
+          <div class="account-stat">CPR médio: <span class="priv">${cprTxt}</span></div>
+          <div class="account-stat">Gasto: <span class="priv">${spendTxt}</span></div>
+          <div class="account-stat">Meta: <span>R$ ${c.cpr.toFixed(2)}</span></div>
+        </div>
+      </div>
+      <div class="account-actions">
+        <button class="account-edit-btn" onclick="editClient('${c.id}')">Editar</button>
+        <button class="btn-danger" onclick="openDeleteModal('${c.id}')">Remover</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderClientChips() {
+  const clients = getClients();
+  const el = document.getElementById('client-chip-list');
+  if (!clients.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);font-family:var(--mono);text-align:center;padding:10px">Nenhum cliente cadastrado.<br><span style="color:var(--accent);cursor:pointer" onclick="goPage(\'contas\')">Cadastrar agora →</span></div>';
+    selectedClientId = null;
+    return;
+  }
+  el.innerHTML = clients.map(c => {
+    const last = c.lastAnalysis;
+    const dotClass = last ? last.overall : 'none';
+    const cprTxt = last ? 'R$ ' + last.avg_cpr.toFixed(2) : 'sem análise';
+    return `<div class="client-chip ${selectedClientId === c.id ? 'selected' : ''}" onclick="selectClient('${c.id}')">
+      <div class="chip-dot ${dotClass}"></div>
+      <div class="chip-name">${c.emoji || '🏢'} ${c.name}</div>
+      <div class="chip-cpr">${cprTxt}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectClient(id) {
+  selectedClientId = id;
+  const c = getClients().find(c => c.id === id);
+  if (c) {
+    document.getElementById('target-cpr').value = c.cpr || 3;
+    document.getElementById('client-ctx').value = c.ctx || '';
+  }
+  renderClientChips();
+}
+
+function renderDashboard() {
+  const clients = getClients();
+  const grid = document.getElementById('clients-grid-wrap');
+
+  // Stats gerais
+  const withData = clients.filter(c => c.lastAnalysis);
+  const totalSpend  = withData.reduce((s, c) => s + (c.lastAnalysis.total_spend || 0), 0);
+  const totalResult = withData.reduce((s, c) => s + (c.lastAnalysis.total_results || 0), 0);
+  const avgCpr      = totalResult > 0 ? totalSpend / totalResult : 0;
+  const alerts      = withData.filter(c => c.lastAnalysis.overall === 'bad').length;
+
+  document.getElementById('ov-total-clients').textContent = clients.length;
+  document.getElementById('ov-clients-sub').textContent = withData.length + ' com análise';
+  document.getElementById('ov-total-spend').textContent = 'R$ ' + totalSpend.toFixed(2);
+  document.getElementById('ov-avg-cpr').textContent = avgCpr > 0 ? 'R$ ' + avgCpr.toFixed(2) : 'R$ —';
+  document.getElementById('ov-alerts').textContent = alerts > 0 ? alerts + ' crítico' + (alerts > 1 ? 's' : '') : '✓ Tudo ok';
+  document.getElementById('ov-alerts').style.color = alerts > 0 ? 'var(--red)' : 'var(--green)';
+  document.getElementById('ov-sub').textContent = clients.length + ' cliente' + (clients.length !== 1 ? 's' : '') + ' · atualizado agora';
+
+  if (!clients.length) {
+    grid.innerHTML = `<div class="empty-ov"><div class="empty-icon">🏢</div><div class="empty-title">Nenhum cliente cadastrado</div><div class="empty-sub">Vá em Contas para adicionar seus clientes</div><button class="btn-primary" style="margin:0 auto" onclick="goPage('contas')">+ Cadastrar primeiro cliente</button></div>`;
+    return;
+  }
+
+  grid.innerHTML = `<div class="clients-grid">${clients.map((c, i) => {
+    const last = c.lastAnalysis;
+    const sem  = last ? last.overall : 'none';
+    const semClass = sem;
+    const cprClass = last ? (last.avg_cpr <= c.cpr ? 'ok' : last.avg_cpr <= c.cpr * 1.3 ? 'warn' : 'bad') : '';
+    const delay = i * 0.07;
+    return `<div class="client-card" style="animation-delay:${delay}s" onclick="analyzeClient('${c.id}')">
+      <div class="client-card-top">
+        <div>
+          <div class="client-name">${c.emoji || '🏢'} ${c.name}</div>
+          <div class="client-niche">${c.niche || 'sem nicho'}</div>
+        </div>
+        <div class="semaforo ${semClass}"></div>
+      </div>
+      <div class="client-metrics">
+        <div class="client-metric"><div class="cm-label">CPR Médio</div><div class="cm-val ${cprClass} priv">${last ? 'R$ ' + last.avg_cpr.toFixed(2) : '—'}</div></div>
+        <div class="client-metric"><div class="cm-label">Gasto</div><div class="cm-val priv">${last ? 'R$ ' + last.total_spend.toFixed(2) : '—'}</div></div>
+        <div class="client-metric"><div class="cm-label">Resultados</div><div class="cm-val priv">${last ? last.total_results : '—'}</div></div>
+      </div>
+      <div class="client-footer">
+        <div class="client-last">${last ? 'Analisado ' + new Date(last.ts).toLocaleDateString('pt-BR') : 'Sem análise ainda'}</div>
+        <button class="client-analyze-btn" onclick="event.stopPropagation();analyzeClient('${c.id}')">Analisar →</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function analyzeClient(id) {
+  selectClient(id);
+  goPage('analise');
+  document.getElementById('page-analise').scrollIntoView();
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONFIGURAÇÕES
+// ═══════════════════════════════════════════════════════
+async function loadSettings() {
+  const cfg = await sbLoadConfig();
+  if (cfg.claude_key) document.getElementById('s-claude-key').value = cfg.claude_key;
+  if (cfg.tg_token)   document.getElementById('s-tg-token').value   = cfg.tg_token;
+  if (cfg.tg_chat)    document.getElementById('s-tg-chat').value    = cfg.tg_chat;
+}
+
+async function saveGlobalKey() {
+  const k = document.getElementById('s-claude-key').value.trim();
+  if (!k) return;
+  await sbSaveConfig({ claude_key: k });
+  const ok = document.getElementById('s-claude-ok');
+  ok.style.display='block'; setTimeout(() => ok.style.display='none', 2500);
+}
+
+async function saveTelegram() {
+  const t = document.getElementById('s-tg-token').value.trim();
+  const c = document.getElementById('s-tg-chat').value.trim();
+  if (!t || !c) return;
+  await sbSaveConfig({ tg_token: t, tg_chat: c });
+  const ok = document.getElementById('s-tg-ok');
+  ok.style.display='block'; setTimeout(() => ok.style.display='none', 2500);
+}
+
+async function testTelegram() {
+  const cfg   = getConfig();
+  const token = cfg.tg_token;
+  const chat  = cfg.tg_chat;
+  const errEl = document.getElementById('s-tg-err');
+  const okEl  = document.getElementById('s-tg-ok');
+  errEl.style.display = 'none';
+  if (!token || !chat) { errEl.textContent='Configure e salve o Bot Token e Chat ID primeiro'; errEl.style.display='block'; return; }
+  try {
+    const msg = '✅ *Meta Intelligence v2 — RASC*\n\nTelegram configurado com sucesso! Você receberá alertas de campanhas aqui.';
+    await sendTelegramMessage(token, chat, msg);
+    okEl.textContent = '✓ Mensagem enviada! Verifique seu Telegram.';
+    okEl.style.display='block'; setTimeout(() => okEl.style.display='none', 3000);
+  } catch(e) {
+    errEl.textContent = 'Erro: ' + e.message;
+    errEl.style.display='block';
+  }
+}
+
+async function sendTelegramMessage(token, chat, text) {
+  const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chat, text, parse_mode: 'Markdown' })
+  });
+  const data = await resp.json();
+  if (!data.ok) throw new Error(data.description || 'Erro Telegram');
+  return data;
+}
+
+function saveSupabase() {
+  testSupabaseConnection();
+}
+
+async function testSupabaseConnection() {
+  const label = document.getElementById('supa-status-label');
+  const ok    = document.getElementById('s-supa-ok');
+  label.textContent = '● Testando…'; label.style.color = 'var(--amber)';
+  try {
+    const { error } = await sb.from('clientes').select('id').eq('user_id', USER_ID).limit(1);
+    if (error) throw error;
+    label.textContent = '● Conectado e funcionando'; label.style.color = 'var(--green)';
+    ok.textContent = '✓ Conexão com Supabase OK!'; ok.style.display='block';
+    setTimeout(() => ok.style.display='none', 3000);
+  } catch(e) {
+    label.textContent = '● Erro: ' + e.message; label.style.color = 'var(--red)';
+  }
+}
+
+async function clearAllData() {
+  if (!confirm('ATENÇÃO: Isso apagará TODOS os dados no Supabase (clientes, histórico, configurações). Continuar?')) return;
+  await sb.from('clientes').delete().eq('user_id', USER_ID);
+  await sb.from('analises').delete().eq('user_id', USER_ID);
+  await sb.from('configuracoes').delete().eq('user_id', USER_ID);
+  _clientsCache = null; _histCache = null; _configCache = null;
+  location.reload();
+}
+
+// ═══════════════════════════════════════════════════════
+//  DEMO DATA
+// ═══════════════════════════════════════════════════════
 function getDemoData() {
   return [
-    {
-      campaign_id: 'demo_001',
-      campaign_name: 'César Imports — iPhone Conversas',
-      objective: 'MESSAGES',
-      spend: '287.50',
-      impressions: '38400',
-      reach: '18200',
-      clicks: '468',
-      ctr: '1.22',
-      cpc: '0.61',
-      cpm: '7.49',
-      frequency: '2.11',
-      cost_per_result: '3.82',
-      results: 75,
-      days: 7,
-    },
-    {
-      campaign_id: 'demo_002',
-      campaign_name: 'César Imports — Acessórios Tráfego',
-      objective: 'LINK_CLICKS',
-      spend: '143.00',
-      impressions: '21600',
-      reach: '9800',
-      clicks: '194',
-      ctr: '0.90',
-      cpc: '0.74',
-      cpm: '6.62',
-      frequency: '2.20',
-      cost_per_result: '4.60',
-      results: 31,
-      days: 7,
-    },
-    {
-      campaign_id: 'demo_003',
-      campaign_name: 'César Imports — Retargeting Quente',
-      objective: 'MESSAGES',
-      spend: '95.00',
-      impressions: '8900',
-      reach: '2100',
-      clicks: '201',
-      ctr: '2.26',
-      cpc: '0.47',
-      cpm: '10.67',
-      frequency: '4.24',
-      cost_per_result: '2.18',
-      results: 43,
-      days: 7,
-    },
+    { campaign_id:'demo_001', campaign_name:'César Imports — iPhone Conversas', objective:'MESSAGES', spend:'287.50', impressions:'38400', reach:'18200', clicks:'468', ctr:'1.22', cpc:'0.61', cpm:'7.49', frequency:'2.11', cost_per_result:'3.82', results:75, days:7 },
+    { campaign_id:'demo_002', campaign_name:'César Imports — Acessórios Tráfego', objective:'LINK_CLICKS', spend:'143.00', impressions:'21600', reach:'9800', clicks:'194', ctr:'0.90', cpc:'0.74', cpm:'6.62', frequency:'2.20', cost_per_result:'4.60', results:31, days:7 },
+    { campaign_id:'demo_003', campaign_name:'Retargeting Quente', objective:'MESSAGES', spend:'95.00', impressions:'8900', reach:'2100', clicks:'201', ctr:'2.26', cpc:'0.47', cpm:'10.67', frequency:'4.24', cost_per_result:'2.18', results:43, days:7 },
   ];
 }
 
-// ── META API CALL ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  META API
+// ═══════════════════════════════════════════════════════
 async function fetchMetaCampaigns(token, accountId, datePreset) {
-  const fields = [
-    'campaign_name','campaign_id','objective','spend','impressions',
-    'reach','clicks','ctr','cpc','cpm','frequency','actions','cost_per_action_type'
-  ].join(',');
-
-  const params = new URLSearchParams({
-    access_token: token,
-    level: 'campaign',
-    date_preset: datePreset,
-    fields,
-    filtering: JSON.stringify([{field:'campaign.effective_status',operator:'IN',value:['ACTIVE']}]),
-    limit: 30
-  });
-
+  const fields = ['campaign_name','campaign_id','objective','spend','impressions','reach','clicks','ctr','cpc','cpm','frequency','actions','cost_per_action_type'].join(',');
+  const params = new URLSearchParams({ access_token:token, level:'campaign', date_preset:datePreset, fields, filtering:JSON.stringify([{field:'campaign.effective_status',operator:'IN',value:['ACTIVE']}]), limit:30 });
   const resp = await fetch(`${META_API}/${accountId}/insights?${params}`);
   const data = await resp.json();
   if (data.error) throw new Error(data.error.message);
@@ -425,246 +1118,105 @@ async function fetchMetaCampaigns(token, accountId, datePreset) {
 }
 
 function normalizeCampaign(c, targetCpr) {
-  const spend = parseFloat(c.spend || 0);
-  const impressions = parseInt(c.impressions || 0);
-  const reach = parseInt(c.reach || 0);
-  const clicks = parseInt(c.clicks || 0);
-  const ctr = parseFloat(c.ctr || 0);
-  const cpc = parseFloat(c.cpc || 0);
-  const cpm = parseFloat(c.cpm || 0);
-  const freq = parseFloat(c.frequency || 0);
-
-  // Extract CPR
-  let cpr = parseFloat(c.cost_per_result || 0);
-  let results = parseInt(c.results || 0);
+  const spend=parseFloat(c.spend||0), impressions=parseInt(c.impressions||0), reach=parseInt(c.reach||0);
+  const clicks=parseInt(c.clicks||0), ctr=parseFloat(c.ctr||0), cpc=parseFloat(c.cpc||0);
+  const cpm=parseFloat(c.cpm||0), freq=parseFloat(c.frequency||0);
+  let cpr=parseFloat(c.cost_per_result||0), results=parseInt(c.results||0);
   if (!cpr && c.cost_per_action_type) {
-    const types = ['onsite_conversion.messaging_conversation_started_7d','lead','purchase','omni_initiated_checkout'];
-    for (const a of c.cost_per_action_type) {
-      if (types.includes(a.action_type)) { cpr = parseFloat(a.value || 0); break; }
-    }
+    const types=['onsite_conversion.messaging_conversation_started_7d','lead','purchase','omni_initiated_checkout'];
+    for (const a of c.cost_per_action_type) { if (types.includes(a.action_type)) { cpr=parseFloat(a.value||0); break; } }
   }
-  if (!results && spend && cpr) results = Math.round(spend / cpr);
-
-  const desvio = targetCpr ? ((cpr - targetCpr) / targetCpr * 100) : 0;
-
-  return { ...c, spend, impressions, reach, clicks, ctr, cpc, cpm, freq, cpr, results, desvio };
+  if (!results && spend && cpr) results=Math.round(spend/cpr);
+  const desvio = targetCpr ? ((cpr-targetCpr)/targetCpr*100) : 0;
+  return {...c, spend, impressions, reach, clicks, ctr, cpc, cpm, freq, cpr, results, desvio};
 }
 
-// ── CLAUDE ANALYSIS ────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  CLAUDE ANALYSIS
+// ═══════════════════════════════════════════════════════
 async function analyzeWithClaude(campaigns, targetCpr, clientCtx, claudeKey, checks) {
-  const dataBlock = campaigns.map(c => `
-CAMPANHA: ${c.campaign_name}
-  Objetivo: ${c.objective}
-  Gasto: R$ ${c.spend.toFixed(2)} | Resultados: ${c.results}
-  CPR: R$ ${c.cpr.toFixed(2)}${targetCpr ? ` (meta: R$ ${targetCpr}, desvio: ${c.desvio > 0 ? '+' : ''}${c.desvio.toFixed(0)}%)` : ''}
-  CTR: ${c.ctr.toFixed(2)}% | CPC: R$ ${c.cpc.toFixed(2)} | CPM: R$ ${c.cpm.toFixed(2)}
-  Alcance: ${c.reach.toLocaleString('pt-BR')} | Frequência: ${c.freq.toFixed(1)}`).join('\n');
-
+  const dataBlock = campaigns.map(c => `CAMPANHA: ${c.campaign_name}\n  Objetivo: ${c.objective}\n  Gasto: R$ ${c.spend.toFixed(2)} | Resultados: ${c.results}\n  CPR: R$ ${c.cpr.toFixed(2)}${targetCpr ? ` (meta: R$ ${targetCpr}, desvio: ${c.desvio>0?'+':''}${c.desvio.toFixed(0)}%)` : ''}\n  CTR: ${c.ctr.toFixed(2)}% | CPC: R$ ${c.cpc.toFixed(2)} | CPM: R$ ${c.cpm.toFixed(2)}\n  Alcance: ${c.reach.toLocaleString('pt-BR')} | Frequência: ${c.freq.toFixed(1)}`).join('\n');
   const items = [];
-  if (checks.diag) items.push('1. Diagnóstico objetivo por campanha (2–3 linhas cada, identifique a causa raiz)');
-  if (checks.budget) items.push('2. Recomendações exatas de orçamento e bid (valores em R$, motivo em 1 linha)');
+  if (checks.diag) items.push('1. Diagnóstico objetivo por campanha (2–3 linhas, causa raiz)');
+  if (checks.budget) items.push('2. Recomendações de orçamento e bid (valores em R$ exatos)');
   if (checks.creative) items.push('3. Avaliação de criativos com base no CTR e frequência');
-  if (checks.audience) items.push('4. Análise de público: saturação, qualidade, expansão sugerida');
+  if (checks.audience) items.push('4. Análise de público: saturação, qualidade, expansão');
   if (checks.steps) items.push('5. Top 3 ações prioritárias (hoje / 48h / semana)');
-
-  const prompt = `Você é um especialista sênior em Meta Ads. Analise as campanhas e retorne um JSON com a seguinte estrutura exata para cada campanha. Retorne APENAS o JSON, sem markdown, sem explicação.
+  const prompt = `Você é um especialista sênior em Meta Ads. Analise as campanhas e retorne APENAS o JSON abaixo, sem markdown, sem explicação.
 
 Estrutura:
-{
-  "resumo_geral": "string",
-  "campanhas": [
-    {
-      "id": "campaign_id",
-      "diagnostico": "string com diagnóstico da campanha",
-      "status": "ok|warn|bad",
-      "solucoes": [
-        { "prioridade": "P1|P2|P3", "titulo": "string", "acao": "string com valor exato" }
-      ]
-    }
-  ]
-}
+{"resumo_geral":"string","campanhas":[{"id":"campaign_id","diagnostico":"string","status":"ok|warn|bad","solucoes":[{"prioridade":"P1|P2|P3","titulo":"string","acao":"string"}]}]}
 
-Regras:
-- Status "ok" = CPR abaixo da meta e frequência < 3.0
-- Status "warn" = CPR até 30% acima da meta OU frequência 3.0–3.5
-- Status "bad" = CPR > 30% acima da meta OU frequência > 3.5
-- P1 = ação imediata crítica, P2 = 48h, P3 = estratégico
-- Nunca sugira aumento de orçamento > 20% por vez
-- Frequência > 3.5 = sinalizar fadiga antes de qualquer recomendação de bid
-- Use valores em R$ exatos nas ações
-- Máximo 4 soluções por campanha
+Regras: ok=CPR abaixo da meta e freq<3; warn=CPR até 30% acima OU freq 3-3.5; bad=CPR>30% acima OU freq>3.5. P1=hoje, P2=48h, P3=estratégico. Máx 4 soluções/campanha. Nunca aumente orçamento >20%.
 
-${clientCtx ? `Contexto: ${clientCtx}` : ''}
-${targetCpr ? `Meta global de CPR: R$ ${targetCpr}` : ''}
-
-Itens solicitados: ${items.join('; ')}
-
-DADOS:
-${dataBlock}`;
-
+${clientCtx ? `Contexto: ${clientCtx}` : ''}${targetCpr ? `\nMeta global CPR: R$ ${targetCpr}` : ''}
+Itens: ${items.join('; ')}
+DADOS:\n${dataBlock}`;
+  const claudeKeyFinal = claudeKey || getConfig().claude_key || '';
+  if (!claudeKeyFinal) throw new Error('Configure a Anthropic API Key nas Configurações.');
   const resp = await fetch(CLAUDE_API, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': claudeKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }]
-    })
+    method:'POST', headers:{'Content-Type':'application/json','x-api-key':claudeKeyFinal,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,messages:[{role:'user',content:prompt}]})
   });
-
   const data = await resp.json();
   if (data.error) throw new Error(data.error.message);
-
-  let raw = data.content[0].text.trim();
-
-  // Remover blocos de código markdown
-  raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
-
-  // Extrair apenas o JSON — pegar do primeiro { até o último }
-  const firstBrace = raw.indexOf('{');
-  const lastBrace = raw.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace !== -1) {
-    raw = raw.slice(firstBrace, lastBrace + 1);
-  }
-
-  // Sanitizar caracteres problemáticos dentro de strings JSON
-  // Substitui quebras de linha dentro de valores string por espaço
-  raw = raw.replace(/:\s*"((?:[^"\\]|\\.)*)"/g, (match, val) => {
-    const clean = val
-      .replace(/\n/g, ' ')
-      .replace(/\r/g, ' ')
-      .replace(/\t/g, ' ')
-      .replace(/\\/g, '\\\\')
-      .replace(/"/g, '\\"');
-    // Desfaz double-escape de escapes legítimos
-    return ': "' + clean.replace(/\\\\\\/g, '\\') + '"';
-  });
-
-  try {
-    return JSON.parse(raw);
-  } catch(e) {
-    // Última tentativa: usar Function para parse mais permissivo
-    try {
-      return JSON.parse(raw.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' '));
-    } catch(e2) {
-      throw new Error('JSON Parse error: ' + e.message + ' — Tente novamente ou reduza o número de campanhas.');
-    }
+  let raw = data.content[0].text.trim().replace(/```json\s*/gi,'').replace(/```\s*/g,'');
+  const fb=raw.indexOf('{'), lb=raw.lastIndexOf('}');
+  if (fb!==-1&&lb!==-1) raw=raw.slice(fb,lb+1);
+  raw=raw.replace(/:\s*"((?:[^"\\]|\\.)*)"/g,(_,v)=>':"'+v.replace(/\n/g,' ').replace(/\r/g,' ').replace(/\t/g,' ')+'"');
+  try { return JSON.parse(raw); } catch(e) {
+    try { return JSON.parse(raw.replace(/[\u0000-\u001F\u007F-\u009F]/g,' ')); }
+    catch { throw new Error('Erro ao interpretar resposta do Claude. Tente novamente.'); }
   }
 }
 
-// ── RENDER ─────────────────────────────────────────────
-function getBadgeClass(status) {
-  return status === 'ok' ? 'badge-ok' : status === 'warn' ? 'badge-warn' : 'badge-bad';
-}
-function getBadgeLabel(status) {
-  return status === 'ok' ? 'No alvo' : status === 'warn' ? 'Atenção' : 'Crítico';
-}
-function getMetricClass(val, thresholds) {
-  if (!thresholds) return '';
-  if (thresholds.reverse) return val <= thresholds.warn ? 'ok' : val <= thresholds.bad ? 'warn' : 'bad';
-  return val >= thresholds.ok ? 'ok' : val >= thresholds.warn ? 'warn' : 'bad';
-}
-function getPrioClass(p) {
-  return p === 'P1' ? 'sol-p1' : p === 'P2' ? 'sol-p2' : 'sol-p3';
-}
+// ═══════════════════════════════════════════════════════
+//  RENDER RESULTADOS
+// ═══════════════════════════════════════════════════════
+const getBadgeClass = s => s==='ok'?'badge-ok':s==='warn'?'badge-warn':'badge-bad';
+const getBadgeLabel = s => s==='ok'?'No alvo':s==='warn'?'Atenção':'Crítico';
+const getPrioClass  = p => p==='P1'?'sol-p1':p==='P2'?'sol-p2':'sol-p3';
 
 function renderResults(campaigns, analysis, targetCpr) {
   const area = document.getElementById('results-area');
-  let html = '';
+  const total_spend = campaigns.reduce((s,c)=>s+c.spend,0);
+  const total_results = campaigns.reduce((s,c)=>s+c.results,0);
+  const avg_cpr = total_results>0 ? total_spend/total_results : 0;
+  const critical = analysis.campanhas.filter(c=>c.status==='bad').length;
 
-  // Summary banner
-  const total_spend = campaigns.reduce((s, c) => s + c.spend, 0);
-  const total_results = campaigns.reduce((s, c) => s + c.results, 0);
-  const avg_cpr = total_results > 0 ? total_spend / total_results : 0;
-  const critical = analysis.campanhas.filter(c => c.status === 'bad').length;
-
-  html += `<div class="summary-banner">
-    <div class="summary-left">
-      <div class="summary-icon">📊</div>
-      <div>
-        <div style="font-weight:500;font-size:14px">${analysis.resumo_geral}</div>
-        <div class="summary-text">${campaigns.length} campanha(s) analisada(s)${critical > 0 ? ` · <span style="color:var(--red)">${critical} crítica(s)</span>` : ''}</div>
-      </div>
+  let html = `<div class="summary-banner">
+    <div class="sum-left"><div class="sum-icon">📊</div>
+      <div><div style="font-weight:600;font-size:14px">${analysis.resumo_geral}</div>
+      <div class="sum-text">${campaigns.length} campanha(s)${critical>0?` · <span style="color:var(--red)">${critical} crítica(s)</span>`:''}</div></div>
     </div>
-    <div class="summary-stats">
-      <div class="stat-item">
-        <div class="stat-val" style="color:var(--text)">R$ ${total_spend.toFixed(2)}</div>
-        <div class="stat-lab">gasto total</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val" style="color:${avg_cpr > targetCpr * 1.3 ? 'var(--red)' : avg_cpr > targetCpr ? 'var(--amber)' : 'var(--green)'}">R$ ${avg_cpr.toFixed(2)}</div>
-        <div class="stat-lab">CPR médio</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val" style="color:var(--text)">${total_results}</div>
-        <div class="stat-lab">resultados</div>
-      </div>
+    <div class="sum-stats">
+      <div class="sstat-item"><div class="sstat-val priv">R$ ${total_spend.toFixed(2)}</div><div class="sstat-lab">gasto</div></div>
+      <div class="sstat-item"><div class="sstat-val priv" style="color:${avg_cpr>targetCpr*1.3?'var(--red)':avg_cpr>targetCpr?'var(--amber)':'var(--green)'}">R$ ${avg_cpr.toFixed(2)}</div><div class="sstat-lab">CPR médio</div></div>
+      <div class="sstat-item"><div class="sstat-val priv">${total_results}</div><div class="sstat-lab">resultados</div></div>
     </div>
   </div>`;
 
-  // Campaign cards
-  campaigns.forEach((c, i) => {
-    const ai = analysis.campanhas.find(a => a.id === c.campaign_id) || analysis.campanhas[i] || {};
+  campaigns.forEach((c,i) => {
+    const ai = analysis.campanhas.find(a=>a.id===c.campaign_id) || analysis.campanhas[i] || {};
     const status = ai.status || 'warn';
-    const delay = i * 0.08;
-
-    const ctrClass = c.ctr >= 2 ? 'ok' : c.ctr >= 1 ? 'warn' : 'bad';
-    const freqClass = c.freq < 2.5 ? 'ok' : c.freq < 3.5 ? 'warn' : 'bad';
-    const cprClass = !targetCpr ? '' : c.cpr <= targetCpr ? 'ok' : c.cpr <= targetCpr * 1.3 ? 'warn' : 'bad';
-
-    html += `<div class="camp-card" style="animation-delay:${delay}s">
-      <div class="camp-header">
-        <div>
-          <div class="camp-name">${c.campaign_name}</div>
-          <div class="camp-meta">${c.objective} · ${c.days || 7} dias · R$ ${c.spend.toFixed(2)} investidos</div>
-        </div>
+    const ctrClass = c.ctr>=2?'ok':c.ctr>=1?'warn':'bad';
+    const freqClass = c.freq<2.5?'ok':c.freq<3.5?'warn':'bad';
+    const cprClass = !targetCpr?'':c.cpr<=targetCpr?'ok':c.cpr<=targetCpr*1.3?'warn':'bad';
+    html += `<div class="camp-card" style="animation-delay:${i*.08}s">
+      <div class="camp-hdr">
+        <div><div class="camp-name">${c.campaign_name}</div><div class="camp-meta">${c.objective} · R$ ${c.spend.toFixed(2)}</div></div>
         <span class="status-badge ${getBadgeClass(status)}">${getBadgeLabel(status)}</span>
       </div>
       <div class="metrics-strip">
-        <div class="metric-cell">
-          <div class="metric-cell-label">CPR</div>
-          <div class="metric-cell-val ${cprClass}">R$ ${c.cpr.toFixed(2)}</div>
-        </div>
-        <div class="metric-cell">
-          <div class="metric-cell-label">CTR</div>
-          <div class="metric-cell-val ${ctrClass}">${c.ctr.toFixed(2)}%</div>
-        </div>
-        <div class="metric-cell">
-          <div class="metric-cell-label">CPM</div>
-          <div class="metric-cell-val">R$ ${c.cpm.toFixed(2)}</div>
-        </div>
-        <div class="metric-cell">
-          <div class="metric-cell-label">Freq.</div>
-          <div class="metric-cell-val ${freqClass}">${c.freq.toFixed(1)}</div>
-        </div>
-        <div class="metric-cell">
-          <div class="metric-cell-label">Resultados</div>
-          <div class="metric-cell-val">${c.results}</div>
-        </div>
+        <div class="metric-cell"><div class="mc-label">CPR</div><div class="mc-val ${cprClass} priv">R$ ${c.cpr.toFixed(2)}</div></div>
+        <div class="metric-cell"><div class="mc-label">CTR</div><div class="mc-val ${ctrClass}">${c.ctr.toFixed(2)}%</div></div>
+        <div class="metric-cell"><div class="mc-label">CPM</div><div class="mc-val priv">R$ ${c.cpm.toFixed(2)}</div></div>
+        <div class="metric-cell"><div class="mc-label">Freq.</div><div class="mc-val ${freqClass}">${c.freq.toFixed(1)}</div></div>
+        <div class="metric-cell"><div class="mc-label">Resultados</div><div class="mc-val priv">${c.results}</div></div>
       </div>
       <div class="diag-body">
-        ${ai.diagnostico ? `<div class="diag-section">
-          <div class="diag-label">Diagnóstico</div>
-          <div class="diag-text">${ai.diagnostico}</div>
-        </div>` : ''}
-        ${ai.solucoes && ai.solucoes.length ? `<div class="diag-section">
-          <div class="diag-label">Soluções recomendadas</div>
-          <div class="solutions-list">
-            ${ai.solucoes.map(s => `
-            <div class="solution-item">
-              <span class="sol-priority ${getPrioClass(s.prioridade)}">${s.prioridade}</span>
-              <div>
-                <div class="sol-text">${s.titulo}</div>
-                <div class="sol-action">${s.acao}</div>
-              </div>
-            </div>`).join('')}
-          </div>
-        </div>` : ''}
+        ${ai.diagnostico?`<div class="diag-section"><div class="diag-lbl">Diagnóstico</div><div class="diag-text">${ai.diagnostico}</div></div>`:''}
+        ${ai.solucoes&&ai.solucoes.length?`<div class="diag-section"><div class="diag-lbl">Soluções</div><div class="solutions-list">${ai.solucoes.map(s=>`<div class="solution-item"><span class="sol-priority ${getPrioClass(s.prioridade)}">${s.prioridade}</span><div><div class="sol-text">${s.titulo}</div><div class="sol-action">${s.acao}</div></div></div>`).join('')}</div></div>`:''}
       </div>
     </div>`;
   });
@@ -672,394 +1224,242 @@ function renderResults(campaigns, analysis, targetCpr) {
   area.innerHTML = html;
 }
 
-// ── MAIN FLOW ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  ANÁLISE PRINCIPAL
+// ═══════════════════════════════════════════════════════
 async function runAnalysis() {
   const btn = document.getElementById('run-btn');
-  btn.classList.add('loading');
-  btn.disabled = true;
-  document.getElementById('error-box').style.display = 'none';
-
-  const targetCpr = parseFloat(document.getElementById('target-cpr').value) || null;
+  btn.classList.add('loading'); btn.disabled=true;
+  document.getElementById('error-box').style.display='none';
+  const targetCpr = parseFloat(document.getElementById('target-cpr').value)||null;
   const clientCtx = document.getElementById('client-ctx').value;
   const datePreset = document.getElementById('date-preset').value;
-  const checks = {
-    diag: document.getElementById('chk-diag').checked,
-    budget: document.getElementById('chk-budget').checked,
-    creative: document.getElementById('chk-creative').checked,
-    audience: document.getElementById('chk-audience').checked,
-    steps: document.getElementById('chk-steps').checked,
-  };
+  const checks = { diag:document.getElementById('chk-diag').checked, budget:document.getElementById('chk-budget').checked, creative:document.getElementById('chk-creative').checked, audience:document.getElementById('chk-audience').checked, steps:document.getElementById('chk-steps').checked };
+
+  // Resolver credenciais: cliente selecionado > manual > localStorage legado
+  let token='', account='';
+  if (selectedClientId && currentMode === 'live') {
+    const c = getClients().find(c => c.id === selectedClientId);
+    if (c) { token=c.token; account=c.acct; }
+  }
+  if (!token) token = document.getElementById('meta-token').value.trim() || localStorage.getItem(LKEYS.legToken) || '';
+  if (!account) account = document.getElementById('ad-account').value.trim() || localStorage.getItem(LKEYS.legAccount) || '';
 
   try {
     let rawCampaigns;
-
-    if (currentMode === 'demo') {
-      setStatus(true, 'modo demo');
-      rawCampaigns = getDemoData();
-    } else {
-      const token = document.getElementById('meta-token').value.trim();
-      const account = document.getElementById('ad-account').value.trim();
-      if (!token || !account) throw new Error('Informe o Meta Access Token e o Ad Account ID.');
-      setStatus(true, 'conectando ao Meta...');
+    if (currentMode==='demo') { setStatus(true,'modo demo'); rawCampaigns=getDemoData(); }
+    else {
+      if (!token||!account) throw new Error('Selecione um cliente ou informe as credenciais manuais.');
+      setStatus(true,'conectando ao Meta…');
       rawCampaigns = await fetchMetaCampaigns(token, account, datePreset);
       if (!rawCampaigns.length) throw new Error('Nenhuma campanha ativa encontrada no período.');
     }
-
-    const claudeKey = document.getElementById('claude-key').value.trim();
-    if (!claudeKey && currentMode !== 'demo') throw new Error('Informe a Anthropic API Key.');
-
-    setStatus(true, 'analisando com Claude...');
-    const campaigns = rawCampaigns.map(c => normalizeCampaign(c, targetCpr));
-
+    setStatus(true,'analisando com Claude…');
+    const campaigns = rawCampaigns.map(c=>normalizeCampaign(c,targetCpr));
+    const claudeKey = document.getElementById('claude-key').value.trim() || localStorage.getItem(LKEYS.legClaude) || getConfig().claude_key || '';
     let analysis;
-    if (currentMode === 'demo' && !claudeKey) {
-      // fallback análise local para demo sem key
-      analysis = {
-        resumo_geral: 'Análise demo — campanha de retargeting eficiente, tráfego frio precisa de atenção no CTR.',
-        campanhas: [
-          { id:'demo_001', status:'warn', diagnostico:'CPR 27% acima da meta de R$ 3,00. CTR saudável mas CPM competitivo sugere leilão disputado. Público ainda com espaço para otimização.', solucoes:[{prioridade:'P1',titulo:'Reduzir orçamento diário',acao:'De R$ 50 para R$ 40 e aguardar 48h antes de novo ajuste'},{prioridade:'P2',titulo:'Testar novos criativos',acao:'Criar 2 variações de copy com gancho de urgência (ex: unidades limitadas)'},{prioridade:'P3',titulo:'Revisar segmentação',acao:'Excluir públicos que já converteram e adicionar lookalike 2% dos compradores'}] },
-          { id:'demo_002', status:'bad', diagnostico:'CTR abaixo de 1% indica problema claro no criativo. CPR de R$ 4,60 está 53% acima da meta. Prioridade máxima de intervenção.', solucoes:[{prioridade:'P1',titulo:'Pausar criativos atuais',acao:'Substituir por novos anúncios com foco em benefício direto e CTA claro'},{prioridade:'P1',titulo:'Reduzir orçamento',acao:'De R$ 25 para R$ 15 até CTR superar 1,5%'},{prioridade:'P2',titulo:'Revisar público-alvo',acao:'Testar público mais amplo — interesses muito nichados elevam CPM sem ganho de conversão'}] },
-          { id:'demo_003', status:'warn', diagnostico:'Frequência 4.24 — audiência saturada. CPR excelente (R$ 2,18) mas tende a piorar rapidamente com a fadiga. Agir antes que a performance caia.', solucoes:[{prioridade:'P1',titulo:'Rotacionar criativos imediatamente',acao:'Inserir 3 novos criativos e pausar os que estão rodando há mais de 10 dias'},{prioridade:'P2',titulo:'Expandir público de retargeting',acao:'Aumentar janela de engajamento de 30 para 60 dias para ampliar audiência'},{prioridade:'P3',titulo:'Aproveitar o CPR baixo',acao:'Aumentar orçamento em até 20% (de R$ 15 para R$ 18) com os novos criativos'}] },
-        ]
-      };
-    } else {
-      analysis = await analyzeWithClaude(campaigns, targetCpr, clientCtx, claudeKey, checks);
-    }
-
-    setStatus(true, 'atualizado');
+    if (currentMode==='demo'&&!claudeKey&&!getConfig().claude_key) {
+      analysis = { resumo_geral:'Análise demo — retargeting eficiente, tráfego frio precisa atenção no CTR.',campanhas:[
+        {id:'demo_001',status:'warn',diagnostico:'CPR 27% acima da meta. CTR saudável mas CPM competitivo.',solucoes:[{prioridade:'P1',titulo:'Reduzir orçamento diário',acao:'De R$ 50 para R$ 40 por 48h'},{prioridade:'P2',titulo:'Testar novos criativos',acao:'2 variações com gancho de urgência'}]},
+        {id:'demo_002',status:'bad',diagnostico:'CTR < 1% — problema no criativo. CPR 53% acima da meta.',solucoes:[{prioridade:'P1',titulo:'Pausar criativos atuais',acao:'Substituir por anúncios com CTA direto'},{prioridade:'P1',titulo:'Reduzir orçamento',acao:'De R$ 25 para R$ 15 até CTR > 1.5%'}]},
+        {id:'demo_003',status:'warn',diagnostico:'Frequência 4.24 — saturação crítica. CPR excelente mas vai piorar.',solucoes:[{prioridade:'P1',titulo:'Rotacionar criativos',acao:'3 novos criativos, pausar os atuais'},{prioridade:'P3',titulo:'Aproveitar CPR baixo',acao:'Aumentar 20% com os novos criativos'}]}
+      ]};
+    } else { analysis = await analyzeWithClaude(campaigns, targetCpr, clientCtx, claudeKey, checks); }
+    setStatus(true,'atualizado');
     renderResults(campaigns, analysis, targetCpr);
-    saveToHistory(campaigns, analysis, targetCpr, clientCtx, datePreset);
-
-  } catch (err) {
-    setStatus(false, 'erro');
-    showError('Erro: ' + err.message);
+    const entry = saveToHistory(campaigns, analysis, targetCpr, clientCtx, datePreset);
+    // Atualizar lastAnalysis do cliente no Supabase
+    if (selectedClientId) {
+      await sbUpdateClientAnalysis(selectedClientId, entry);
+      await sbFetchClients();
+    }
+    renderClientChips();
+  } catch(err) {
+    setStatus(false,'erro');
+    const eb = document.getElementById('error-box');
+    eb.textContent='Erro: '+err.message; eb.style.display='block';
     console.error(err);
-  } finally {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-  }
+  } finally { btn.classList.remove('loading'); btn.disabled=false; }
 }
 
-// ── CREDENCIAIS SALVAS ─────────────────────────────────
-function saveCredentials() {
-  const token   = document.getElementById('meta-token').value;
-  const account = document.getElementById('ad-account').value;
-  const claude  = document.getElementById('claude-key').value;
-  if (token)   { localStorage.setItem('mi_meta_token', token);   document.getElementById('saved-token').style.display='inline'; }
-  if (account) { localStorage.setItem('mi_ad_account', account); document.getElementById('saved-account').style.display='inline'; }
-  if (claude)  { localStorage.setItem('mi_claude_key', claude);  document.getElementById('saved-claude').style.display='inline'; }
-}
-
-function loadCredentials() {
-  const token   = localStorage.getItem('mi_meta_token');
-  const account = localStorage.getItem('mi_ad_account');
-  const claude  = localStorage.getItem('mi_claude_key');
-  if (token)   { document.getElementById('meta-token').value  = token;   document.getElementById('saved-token').style.display='inline'; }
-  if (account) { document.getElementById('ad-account').value  = account; document.getElementById('saved-account').style.display='inline'; }
-  if (claude)  { document.getElementById('claude-key').value  = claude;  document.getElementById('saved-claude').style.display='inline'; }
-}
-
-function clearCredentials() {
-  if (!confirm('Apagar credenciais salvas?')) return;
-  localStorage.removeItem('mi_meta_token');
-  localStorage.removeItem('mi_ad_account');
-  localStorage.removeItem('mi_claude_key');
-  document.getElementById('meta-token').value  = '';
-  document.getElementById('ad-account').value  = '';
-  document.getElementById('claude-key').value  = '';
-  ['saved-token','saved-account','saved-claude'].forEach(id => document.getElementById(id).style.display='none');
-}
-
-
-// ── HISTÓRICO DE ANÁLISES ──────────────────────────────
-const HIST_KEY = 'mi_analysis_history';
-const HIST_MAX = 10;
-
-function saveToHistory(campaigns, analysis, targetCpr, clientCtx, datePreset) {
-  const total_spend   = campaigns.reduce((s, c) => s + c.spend, 0);
-  const total_results = campaigns.reduce((s, c) => s + c.results, 0);
-  const avg_cpr       = total_results > 0 ? total_spend / total_results : 0;
-  const critical      = analysis.campanhas.filter(c => c.status === 'bad').length;
-  const warn          = analysis.campanhas.filter(c => c.status === 'warn').length;
-  const ok            = analysis.campanhas.filter(c => c.status === 'ok').length;
-
-  const overall = critical > 0 ? 'bad' : warn > 0 ? 'warn' : 'ok';
-
-  const entry = {
-    id: Date.now(),
-    ts: new Date().toISOString(),
-    datePreset,
-    clientCtx: clientCtx || '',
-    targetCpr: targetCpr || null,
-    resumo: analysis.resumo_geral,
-    total_spend,
-    total_results,
-    avg_cpr,
-    n_camps: campaigns.length,
-    critical,
-    warn,
-    ok,
-    overall,
-    campaigns,
-    analysis
-  };
-
-  let hist = getHistory();
-  hist.unshift(entry);
-  if (hist.length > HIST_MAX) hist = hist.slice(0, HIST_MAX);
-  localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+// ═══════════════════════════════════════════════════════
+//  HISTÓRICO
+// ═══════════════════════════════════════════════════════
+const HIST_MAX = 15;
+function getHistory() { return _histCache || []; }
+async function clearHistory() {
+  if (!confirm('Apagar todo o histórico?')) return;
+  await sbClearHistory();
+  await sbFetchHistory();
   renderHistory();
 }
 
-function getHistory() {
-  try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); }
-  catch { return []; }
-}
-
-function clearHistory() {
-  if (!confirm('Apagar todo o histórico de análises?')) return;
-  localStorage.removeItem(HIST_KEY);
+async function saveToHistory(campaigns, analysis, targetCpr, clientCtx, datePreset) {
+  const total_spend   = campaigns.reduce((s,c)=>s+c.spend,0);
+  const total_results = campaigns.reduce((s,c)=>s+c.results,0);
+  const avg_cpr       = total_results>0 ? total_spend/total_results : 0;
+  const critical      = analysis.campanhas.filter(c=>c.status==='bad').length;
+  const warn          = analysis.campanhas.filter(c=>c.status==='warn').length;
+  const overall       = critical>0?'bad':warn>0?'warn':'ok';
+  const clientName    = selectedClientId ? (getClients().find(c=>c.id===selectedClientId)||{}).name||'' : '';
+  const entry = { ts:new Date().toISOString(), datePreset, clientCtx:clientCtx||'', clientName, targetCpr:targetCpr||null, resumo:analysis.resumo_geral, total_spend, total_results, avg_cpr, n_camps:campaigns.length, critical, warn, overall, campaigns, analysis };
+  const saved = await sbSaveHistory(entry);
+  await sbFetchHistory();
   renderHistory();
+  return saved;
 }
 
 function restoreFromHistory(id) {
-  const hist = getHistory();
-  const entry = hist.find(h => h.id === id);
+  const entry = getHistory().find(h=>h.id===id);
   if (!entry) return;
   renderResults(entry.campaigns, entry.analysis, entry.targetCpr);
-  // Scroll para resultados
-  document.getElementById('results-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('results-area').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function renderHistory() {
-  const hist    = getHistory();
-  const empty   = document.getElementById('hist-empty');
-  const list    = document.getElementById('hist-list');
-
-  if (!hist.length) {
-    empty.style.display = 'block';
-    list.innerHTML = '';
-    return;
-  }
-  empty.style.display = 'none';
-
-  const dotClass  = s => s === 'ok' ? 'hist-dot-ok' : s === 'warn' ? 'hist-dot-warn' : 'hist-dot-bad';
-  const badgeTxt  = s => s === 'ok' ? 'Saudável' : s === 'warn' ? 'Atenção' : 'Crítico';
-  const badgeStyle = s => {
-    if (s === 'ok')   return 'background:rgba(34,211,165,.15);color:var(--green)';
-    if (s === 'warn') return 'background:rgba(247,169,79,.15);color:var(--amber)';
-    return 'background:rgba(247,90,90,.15);color:var(--red)';
-  };
-
-  list.innerHTML = hist.map(h => {
+  const hist = getHistory();
+  const emptyEl = document.getElementById('hist-empty');
+  const listEl  = document.getElementById('hist-list');
+  if (!hist.length) { emptyEl.style.display='block'; listEl.innerHTML=''; return; }
+  emptyEl.style.display='none';
+  listEl.innerHTML = hist.map(h => {
     const dt = new Date(h.ts);
-    const dateStr = dt.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' });
-    const timeStr = dt.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-    const resumoShort = h.resumo.length > 80 ? h.resumo.slice(0, 77) + '...' : h.resumo;
+    const ds = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    const ts = dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const label = h.clientName ? h.clientName : (h.clientCtx || '');
     return `<div class="hist-item" onclick="restoreFromHistory(${h.id})">
-      <div class="hist-dot ${dotClass(h.overall)}"></div>
+      <div class="hist-dot ${h.overall}"></div>
       <div class="hist-info">
-        <div class="hist-date">${dateStr} às ${timeStr}${h.clientCtx ? ' · ' + h.clientCtx : ''}</div>
-        <div class="hist-resumo">${resumoShort}</div>
-        <div class="hist-meta">${h.n_camps} campanha(s) · R$ ${h.total_spend.toFixed(2)} gastos · CPR médio R$ ${h.avg_cpr.toFixed(2)}</div>
+        <div class="hist-date">${ds} ${ts}${label?' · '+label:''}</div>
+        <div class="hist-resumo">${h.resumo.length>75?h.resumo.slice(0,72)+'…':h.resumo}</div>
+        <div class="hist-meta">${h.n_camps} camp. · R$ ${h.total_spend.toFixed(2)} · CPR R$ ${h.avg_cpr.toFixed(2)}</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
-        <span class="hist-badge" style="${badgeStyle(h.overall)}">${badgeTxt(h.overall)}</span>
-        <button class="hist-send-btn" onclick="event.stopPropagation();openSendModal(${JSON.stringify(h).replace(/"/g,'&quot;')})" title="Enviar para cliente">📤 enviar</button>
-      </div>
+      <button class="hist-send-btn" onclick="event.stopPropagation();openTgModal(${h.id})" title="Enviar Telegram">📲</button>
     </div>`;
   }).join('');
 }
 
-
-// ── SUPABASE + ENVIO AO CLIENTE ────────────────────────────
-const SUPA_URL = 'https://odmopyluudtndpaicobp.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kbW9weWx1dWR0bmRwYWljb2JwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MDU2NDUsImV4cCI6MjA5MzM4MTY0NX0.mchvrT3rGwnwHWt0xsmm-IvYShxAbJbs-4bnfwjauZ4';
-const sbMI = supabase.createClient(SUPA_URL, SUPA_KEY);
-
-let pendingHistEntry = null;
-let supaClientes = [];
-
-async function loadSupaClientes() {
-  const { data: { session } } = await sbMI.auth.getSession();
-  if (!session) return;
-  const { data } = await sbMI.from('clientes')
-    .select('id,nome,codigo_acesso,servico')
-    .eq('user_id', session.user.id)
-    .order('nome');
-  supaClientes = data || [];
+// ═══════════════════════════════════════════════════════
+//  TELEGRAM — ENVIO DE ANÁLISE
+// ═══════════════════════════════════════════════════════
+function openTgModal(histId) {
+  const entry = getHistory().find(h=>h.id===histId);
+  if (!entry) return;
+  pendingTgEntry = entry;
+  document.getElementById('tg-custom-msg').value = '';
+  document.getElementById('tg-modal-err').style.display='none';
+  document.getElementById('tg-modal').classList.add('open');
 }
+function closeTgModal() { document.getElementById('tg-modal').classList.remove('open'); pendingTgEntry=null; }
 
-function openSendModal(histEntry) {
-  pendingHistEntry = histEntry;
-  const overlay = document.getElementById('send-modal-overlay');
-  const sel = document.getElementById('send-client-select');
-  document.getElementById('send-success').style.display = 'none';
-  document.getElementById('send-confirm-btn').disabled = false;
-  document.getElementById('send-confirm-btn').textContent = 'Enviar para cliente';
+async function confirmSendTelegram() {
+  const cfg   = getConfig();
+  const token = cfg.tg_token;
+  const chat  = cfg.tg_chat;
+  const errEl = document.getElementById('tg-modal-err');
+  const btn   = document.getElementById('tg-send-btn');
+  errEl.style.display='none';
 
-  if (!supaClientes.length) {
-    sel.innerHTML = '<option value="">Nenhum cliente cadastrado no RASC</option>';
-  } else {
-    sel.innerHTML = '<option value="">Selecione o cliente...</option>' +
-      supaClientes.map(c => `<option value="${c.id}">${c.nome} · ${c.codigo_acesso||'sem codigo'}</option>`).join('');
+  if (!token||!chat) {
+    errEl.textContent='Configure o Telegram em Configurações antes de enviar.';
+    errEl.style.display='block'; return;
   }
+  if (!pendingTgEntry) return;
+  btn.disabled=true; btn.textContent='Enviando…';
 
-  // Renderizar seletor de campanhas
-  renderCampanhasSelector(histEntry.campaigns || []);
-  overlay.classList.add('open');
-}
+  const h = pendingTgEntry;
+  const dt = new Date(h.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+  const customMsg = document.getElementById('tg-custom-msg').value.trim();
 
-function renderCampanhasSelector(campaigns) {
-  const container = document.getElementById('send-camps-container');
-  if (!campaigns || campaigns.length <= 1) {
-    container.style.display = 'none';
-    // Marcar a unica campanha como selecionada
-    return;
+  const statusEmoji = h.overall==='ok'?'🟢':h.overall==='warn'?'🟡':'🔴';
+  const clientLine = h.clientName ? `👤 *Cliente:* ${h.clientName}\n` : '';
+
+  const msg = `${statusEmoji} *Meta Intelligence — Relatório de Campanhas*\n${clientLine}📅 ${dt}${customMsg?'\n💬 '+customMsg:''}
+
+📊 *Resumo:* ${h.resumo}
+
+💰 *Gasto total:* R$ ${h.total_spend.toFixed(2)}
+🎯 *CPR médio:* R$ ${h.avg_cpr.toFixed(2)}${h.targetCpr ? ` (meta R$ ${h.targetCpr.toFixed(2)})` : ''}
+📈 *Resultados:* ${h.total_results}
+📌 *Campanhas:* ${h.n_camps} | ${h.critical} crítica(s) · ${h.warn} atenção
+
+${h.analysis.campanhas.map(c=>{
+  const camp = h.campaigns.find(x=>x.campaign_id===c.id)||h.campaigns[0]||{};
+  const em = c.status==='ok'?'✅':c.status==='warn'?'⚠️':'🔴';
+  const sols = (c.solucoes||[]).slice(0,2).map(s=>`  ${s.prioridade}: ${s.titulo}`).join('\n');
+  return `${em} *${camp.campaign_name||'Campanha'}*\n${c.diagnostico||''}\n${sols}`;
+}).join('\n\n')}
+
+_Enviado via Meta Intelligence v2 · RASC_`;
+
+  try {
+    await sendTelegramMessage(token, chat, msg);
+    btn.textContent='✓ Enviado!';
+    setTimeout(closeTgModal, 1500);
+  } catch(e) {
+    errEl.textContent='Erro: '+e.message; errEl.style.display='block';
+    btn.disabled=false; btn.textContent='📤 Enviar agora';
   }
-  container.style.display = 'block';
-  container.innerHTML = campaigns.map((camp, i) => {
-    const nome = camp.campaign_name || ('Campanha ' + (i+1));
-    const spend = (camp.spend||0).toFixed(2);
-    const cpr = (camp.cpr||0).toFixed(2);
-    const ctr = (camp.ctr||0).toFixed(2);
-    return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#111a13;border-radius:6px;cursor:pointer;margin-bottom:6px;border:1px solid rgba(0,201,110,.1)">' +
-      '<input type="checkbox" name="camp-select" value="' + i + '" checked style="width:auto;accent-color:#00c96e">' +
-      '<div style="flex:1">' +
-        '<div style="font-size:12px;font-weight:500;color:#dff0e8">' + nome + '</div>' +
-        '<div style="font-size:10px;color:#6b7280;font-family:monospace">R$ ' + spend + ' gasto · CPR R$ ' + cpr + ' · CTR ' + ctr + '%</div>' +
-      '</div></label>';
-  }).join('');
 }
 
-function closeSendModal() {
-  document.getElementById('send-modal-overlay').classList.remove('open');
-  pendingHistEntry = null;
+// ═══════════════════════════════════════════════════════
+//  CREDENCIAIS LEGADO (compatibilidade)
+// ═══════════════════════════════════════════════════════
+function setMode(m) {
+  currentMode=m;
+  document.getElementById('tab-live').classList.toggle('active',m==='live');
+  document.getElementById('tab-demo').classList.toggle('active',m==='demo');
 }
 
-async function confirmSendToClient() {
-  const clientId = document.getElementById('send-client-select').value;
-  const titulo = document.getElementById('send-title').value || 'Relatório de Campanhas';
-  const periodo = document.getElementById('send-period').value || 'Últimos 7 dias';
-  const btn = document.getElementById('send-confirm-btn');
+function saveCredentials() {
+  const t=document.getElementById('meta-token').value, a=document.getElementById('ad-account').value, c=document.getElementById('claude-key').value;
+  if(t){localStorage.setItem(LKEYS.legToken,t);document.getElementById('saved-token').style.display='inline';}
+  if(a){localStorage.setItem(LKEYS.legAccount,a);document.getElementById('saved-account').style.display='inline';}
+  if(c){localStorage.setItem(LKEYS.legClaude,c);document.getElementById('saved-claude').style.display='inline';}
+}
 
-  if (!clientId) { alert('Selecione um cliente'); return; }
-  if (!pendingHistEntry) { alert('Nenhuma análise selecionada'); return; }
+function loadCredentials() {
+  const t=localStorage.getItem(LKEYS.legToken), a=localStorage.getItem(LKEYS.legAccount), c=localStorage.getItem(LKEYS.legClaude)||getConfig().claude_key||'';
+  if(t){document.getElementById('meta-token').value=t;document.getElementById('saved-token').style.display='inline';}
+  if(a){document.getElementById('ad-account').value=a;document.getElementById('saved-account').style.display='inline';}
+  if(c){document.getElementById('claude-key').value=c;document.getElementById('saved-claude').style.display='inline';}
+}
 
-  btn.disabled = true; btn.textContent = 'Enviando...';
+function clearCredentials() {
+  if(!confirm('Apagar credenciais manuais?')) return;
+  [LKEYS.legToken,LKEYS.legAccount,LKEYS.legClaude].forEach(k=>localStorage.removeItem(k));
+  ['meta-token','ad-account','claude-key'].forEach(id=>document.getElementById(id).value='');
+  ['saved-token','saved-account','saved-claude'].forEach(id=>document.getElementById(id).style.display='none');
+}
 
-  const { data: { session } } = await sbMI.auth.getSession();
-  if (!session) { alert('Você precisa estar logado no RASC Dashboard'); btn.disabled=false; btn.textContent='Enviar para cliente'; return; }
-
-  const h = pendingHistEntry;
-
-  // Filtrar campanhas selecionadas
-  const allCamps = h.campaigns || [];
-  const checkboxes = document.querySelectorAll('input[name="camp-select"]');
-  let selectedCamps = allCamps;
-  let selectedAnalysis = h.analysis;
-
-  if (checkboxes.length > 0) {
-    const selectedIdxs = Array.from(checkboxes)
-      .filter(cb => cb.checked)
-      .map(cb => parseInt(cb.value));
-
-    if (selectedIdxs.length === 0) {
-      alert('Selecione ao menos uma campanha para enviar.');
-      btn.disabled=false; btn.textContent='Enviar para cliente';
-      return;
-    }
-
-    selectedCamps = selectedIdxs.map(i => allCamps[i]);
-    selectedAnalysis = {
-      ...h.analysis,
-      campanhas: (h.analysis.campanhas || []).filter((_, i) => selectedIdxs.includes(i))
-    };
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
+  setStatus(false, 'conectando…');
+  try {
+    // Carrega tudo do Supabase em paralelo
+    await Promise.all([
+      sbFetchClients(),
+      sbFetchHistory(),
+      sbLoadConfig(),
+    ]);
+      setStatus(true, 'conectado');
+    // Atualiza label de status do Supabase se estiver na página de config
+    const sl = document.getElementById('supa-status-label');
+    if (sl) { sl.textContent = '● Conectado e funcionando'; sl.style.color = 'var(--green)'; }
+  } catch(e) {
+    setStatus(false, 'erro de conexão');
+    console.error('Init Supabase:', e);
+    const sl = document.getElementById('supa-status-label');
+    if (sl) { sl.textContent = '● Erro: ' + e.message; sl.style.color = 'var(--red)'; }
   }
-
-  // Recalcular métricas apenas das campanhas selecionadas
-  const filteredSpend = selectedCamps.reduce((s, c) => s + (c.spend||0), 0);
-  const filteredResults = selectedCamps.reduce((s, c) => s + (c.results||0), 0);
-  const filteredCpr = filteredResults > 0 ? filteredSpend / filteredResults : 0;
-
-  // Calcular status geral APENAS das campanhas selecionadas
-  const selAnalysisCamps = selectedAnalysis.campanhas || [];
-  const hasCritical = selAnalysisCamps.some(c => c.status === 'bad');
-  const hasWarn = selAnalysisCamps.some(c => c.status === 'warn');
-  const filteredStatus = hasCritical ? 'bad' : hasWarn ? 'warn' : 'ok';
-
-  // UPSERT — substitui relatório anterior do mesmo cliente
-  // Primeiro deleta o anterior
-  await sbMI.from('relatorios_cliente')
-    .delete()
-    .eq('cliente_id', clientId)
-    .eq('user_id', session.user.id);
-
-  // Depois insere o novo
-  const { error } = await sbMI.from('relatorios_cliente').insert([{
-    user_id: session.user.id,
-    cliente_id: clientId,
-    titulo,
-    periodo,
-    resumo: selectedAnalysis.resumo_geral || h.resumo,
-    status_geral: filteredStatus,
-    total_spend: filteredSpend,
-    total_results: filteredResults,
-    avg_cpr: filteredCpr,
-    campanhas: selectedCamps,
-    analysis: selectedAnalysis,
-  }]);
-
-  if (error) {
-    alert('Erro ao enviar: ' + error.message);
-    btn.disabled=false; btn.textContent='Enviar para cliente';
-    return;
-  }
-
-  document.getElementById('send-success').style.display = 'block';
-  btn.textContent = '✓ Enviado!';
-  setTimeout(closeSendModal, 2000);
-}
-
-// Inicializar Supabase no load
-window.addEventListener('DOMContentLoaded', () => {
   loadCredentials();
+  renderDashboard();
   renderHistory();
-  loadSupaClientes();
+  renderClientChips();
 });
-
-
 </script>
-
-<!-- SEND TO CLIENT MODAL -->
-<div class="send-modal-overlay" id="send-modal-overlay" onclick="if(event.target===this)closeSendModal()">
-  <div class="send-modal">
-    <div class="send-modal-title">📤 Enviar relatório ao cliente</div>
-    <div class="send-field">
-      <label>CLIENTE</label>
-      <select class="send-select" id="send-client-select">
-        <option value="">Carregando clientes...</option>
-      </select>
-    </div>
-    <div id="send-camps-container" style="display:none;margin-bottom:12px">
-      <div style="font-size:10px;color:#4a6655;font-family:monospace;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">CAMPANHAS A ENVIAR</div>
-      <div style="font-size:11px;color:#7a9e8a;font-family:monospace;margin-bottom:10px">Selecione apenas as campanhas do cliente selecionado</div>
-    </div>
-    <div class="send-field">
-      <label>TÍTULO DO RELATÓRIO (opcional)</label>
-      <input id="send-title" placeholder="Ex: Análise semanal · Maio 2026">
-    </div>
-    <div class="send-field">
-      <label>PERÍODO</label>
-      <input id="send-period" placeholder="Ex: Últimos 7 dias" value="Últimos 7 dias">
-    </div>
-    <div class="send-btns">
-      <button class="send-btn-ghost" onclick="closeSendModal()">Cancelar</button>
-      <button class="send-btn-primary" id="send-confirm-btn" onclick="confirmSendToClient()">Enviar para cliente</button>
-    </div>
-    <div class="send-success" id="send-success">✓ Relatório enviado com sucesso!</div>
-  </div>
-</div>
-
 </body>
 </html>
