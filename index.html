@@ -266,6 +266,73 @@ body.privacy .priv{filter:blur(5px);user-select:none;pointer-events:none}
   .container{padding:20px 16px}
   .hdr,.nav-tabs{padding-left:16px;padding-right:16px}
 }
+
+/* ── PROTOCOLO ───────────────────────────────────────── */
+.proto-layout{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.proto-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.proto-title{font-size:20px;font-weight:600}
+.proto-sub{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.proto-generate-btn{padding:10px 20px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px}
+.proto-generate-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.proto-generate-btn:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed;transform:none}
+.proto-generate-btn .spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.proto-generate-btn.loading .spinner{display:block}
+.proto-generate-btn.loading .btn-label{display:none}
+
+.proto-client-tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.proto-client-tab{padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;transition:all .15s;color:var(--muted);background:none}
+.proto-client-tab:hover{border-color:var(--border2);color:var(--text)}
+.proto-client-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(0,201,110,.06)}
+
+.checklist-section{margin-bottom:20px}
+.checklist-section-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.checklist-items{display:flex;flex-direction:column;gap:6px}
+.checklist-item{display:flex;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;transition:all .15s;cursor:pointer}
+.checklist-item:hover{border-color:var(--border2)}
+.checklist-item.done{opacity:.5}
+.checklist-item.done .ci-text{text-decoration:line-through}
+.ci-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.checklist-item.done .ci-check{background:var(--accent);border-color:var(--accent)}
+.ci-check svg{width:10px;height:10px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;display:none}
+.checklist-item.done .ci-check svg{display:block}
+.ci-body{flex:1}
+.ci-text{font-size:13px;color:var(--text);line-height:1.5}
+.ci-meta{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+.ci-prio{font-size:9px;font-weight:600;font-family:var(--mono);padding:2px 6px;border-radius:4px;flex-shrink:0;align-self:flex-start;margin-top:2px}
+.ci-p1{background:rgba(255,77,106,.12);color:var(--red)}
+.ci-p2{background:rgba(255,179,64,.12);color:var(--amber)}
+.ci-p3{background:rgba(0,201,110,.12);color:var(--accent)}
+
+.proto-empty{background:var(--surface);border:2px dashed var(--border2);border-radius:16px;padding:60px 32px;text-align:center}
+.proto-empty-icon{font-size:40px;margin-bottom:12px}
+.proto-empty-title{font-size:16px;font-weight:600;margin-bottom:6px}
+.proto-empty-sub{font-size:12px;color:var(--muted);font-family:var(--mono)}
+
+.proto-sidebar{display:flex;flex-direction:column;gap:14px}
+.proto-stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.proto-stat-title{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.proto-stat-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}
+.proto-stat-row:last-child{border-bottom:none}
+.proto-stat-label{font-size:12px;color:var(--muted)}
+.proto-stat-val{font-size:13px;font-weight:500;font-family:var(--mono)}
+
+.proto-notes{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.proto-notes-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.proto-notes-title{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.proto-notes-save{font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--mono);transition:color .12s}
+.proto-notes-save:hover{color:var(--accent2)}
+.proto-notes-body{padding:14px}
+.proto-notes-area{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:12px;outline:none;resize:none;line-height:1.6;min-height:120px}
+.proto-notes-area:focus{border-color:rgba(0,201,110,.35)}
+
+.proto-progress{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.proto-progress-title{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.proto-progress-bar-wrap{background:var(--surface2);border-radius:20px;height:8px;overflow:hidden;margin-bottom:6px}
+.proto-progress-bar{height:100%;background:var(--accent);border-radius:20px;transition:width .4s ease}
+.proto-progress-label{font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+@media(max-width:900px){.proto-layout{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -301,6 +368,7 @@ body.privacy .priv{filter:blur(5px);user-select:none;pointer-events:none}
   <div class="nav-tab" onclick="goPage('analise')">🔍 Análise</div>
   <div class="nav-tab" onclick="goPage('contas')">🏢 Contas</div>
   <div class="nav-tab" onclick="goPage('configuracoes')">⚙️ Configurações</div>
+  <div class="nav-tab" onclick="goPage('protocolo')">🎯 Protocolo</div>
 </nav>
 
 <!-- ══════════════════════════════════════════════════════
@@ -747,7 +815,7 @@ async function goPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.querySelectorAll('.nav-tab').forEach((t, i) => {
-    const pages = ['dashboard','analise','contas','configuracoes'];
+    const pages = ['dashboard','analise','contas','configuracoes','protocolo'];
     t.classList.toggle('active', pages[i] === name);
   });
   // Refetch fresco ao trocar de página
@@ -755,6 +823,7 @@ async function goPage(name) {
   if (name === 'analise')        { await sbFetchHistory(); renderClientChips(); renderHistory(); }
   if (name === 'contas')         { await sbFetchClients(); renderAccounts(); }
   if (name === 'configuracoes')  { await loadSettings(); }
+  if (name === 'protocolo')      { await initProtocolo(); }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1432,6 +1501,224 @@ function clearCredentials() {
   ['saved-token','saved-account','saved-claude'].forEach(id=>document.getElementById(id).style.display='none');
 }
 
+
+// ═══════════════════════════════════════════════════════
+//  PROTOCOLO DE OTIMIZAÇÃO
+// ═══════════════════════════════════════════════════════
+const PROTO_KEY = 'mi2_protocolo'; // localStorage para checklist e notas
+let _protoData  = {};   // { clientId: { items, stats, ts, notes } }
+let _protoClientId = null;
+
+function loadProtoData() {
+  try { _protoData = JSON.parse(localStorage.getItem(PROTO_KEY) || '{}'); } catch { _protoData = {}; }
+}
+function saveProtoData() { localStorage.setItem(PROTO_KEY, JSON.stringify(_protoData)); }
+
+async function initProtocolo() {
+  loadProtoData();
+  renderProtoClientTabs();
+  const clients = getClients();
+  if (clients.length && !_protoClientId) _protoClientId = clients[0].id;
+  renderProtoChecklist();
+  loadNota();
+}
+
+function renderProtoClientTabs() {
+  const clients = getClients();
+  const el = document.getElementById('proto-client-tabs');
+  if (!clients.length) { el.innerHTML = ''; return; }
+  el.innerHTML = clients.map(c =>
+    `<div class="proto-client-tab ${_protoClientId === c.id ? 'active' : ''}" onclick="selectProtoClient('${c.id}')">${c.emoji || '🏢'} ${c.name}</div>`
+  ).join('');
+}
+
+function selectProtoClient(id) {
+  _protoClientId = id;
+  renderProtoClientTabs();
+  renderProtoChecklist();
+  loadNota();
+}
+
+function renderProtoChecklist() {
+  const wrap = document.getElementById('proto-checklist-wrap');
+  const data = _protoData[_protoClientId];
+
+  if (!data || !data.items || !data.items.length) {
+    wrap.innerHTML = `<div class="proto-empty"><div class="proto-empty-icon">🎯</div><div class="proto-empty-title">Nenhum protocolo para este cliente</div><div class="proto-empty-sub">Clique em "Gerar Protocolo" para criar o checklist da semana</div></div>`;
+    document.getElementById('proto-progress-wrap').style.display = 'none';
+    document.getElementById('proto-stats-wrap').style.display = 'none';
+    return;
+  }
+
+  const items = data.items;
+  const done  = items.filter(i => i.done).length;
+  const total = items.length;
+  const pct   = total > 0 ? Math.round(done / total * 100) : 0;
+
+  // Progresso
+  document.getElementById('proto-progress-wrap').style.display = 'block';
+  document.getElementById('proto-progress-bar').style.width = pct + '%';
+  document.getElementById('proto-progress-label').textContent = `${done} de ${total} tarefas concluídas (${pct}%)`;
+
+  // Stats
+  if (data.stats) {
+    document.getElementById('proto-stats-wrap').style.display = 'block';
+    document.getElementById('proto-stats-rows').innerHTML = data.stats.map(s =>
+      `<div class="proto-stat-row"><span class="proto-stat-label">${s.label}</span><span class="proto-stat-val" style="color:${s.color||'var(--text)'}">${s.value}</span></div>`
+    ).join('');
+  }
+
+  // Agrupar por prioridade
+  const grupos = [
+    { key: 'P1', label: '🔴 Prioridade 1 — Hoje', items: items.filter(i => i.prio === 'P1') },
+    { key: 'P2', label: '🟡 Prioridade 2 — Próximas 48h', items: items.filter(i => i.prio === 'P2') },
+    { key: 'P3', label: '🟢 Prioridade 3 — Esta semana', items: items.filter(i => i.prio === 'P3') },
+  ];
+
+  const dt = new Date(data.ts).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+  document.getElementById('proto-sub').textContent = `Gerado em ${dt} · ${total} tarefas`;
+
+  wrap.innerHTML = grupos.filter(g => g.items.length).map(g => `
+    <div class="checklist-section">
+      <div class="checklist-section-title">${g.label} <span style="color:var(--muted);font-weight:400">(${g.items.filter(i=>i.done).length}/${g.items.length})</span></div>
+      <div class="checklist-items">
+        ${g.items.map(item => `
+          <div class="checklist-item ${item.done ? 'done' : ''}" onclick="toggleItem('${_protoClientId}','${item.id}')">
+            <div class="ci-check">
+              <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+            </div>
+            <div class="ci-body">
+              <div class="ci-text">${item.text}</div>
+              ${item.meta ? `<div class="ci-meta">${item.meta}</div>` : ''}
+            </div>
+            <span class="ci-prio ci-${item.prio.toLowerCase()}">${item.prio}</span>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function toggleItem(clientId, itemId) {
+  if (!_protoData[clientId]) return;
+  const item = _protoData[clientId].items.find(i => i.id === itemId);
+  if (item) { item.done = !item.done; saveProtoData(); renderProtoChecklist(); }
+}
+
+function loadNota() {
+  const data = _protoData[_protoClientId];
+  document.getElementById('proto-notes-area').value = data?.notes || '';
+}
+
+function salvarNota() {
+  if (!_protoClientId) return;
+  if (!_protoData[_protoClientId]) _protoData[_protoClientId] = { items: [], stats: [], ts: new Date().toISOString() };
+  _protoData[_protoClientId].notes = document.getElementById('proto-notes-area').value;
+  saveProtoData();
+  const btn = document.querySelector('.proto-notes-save');
+  btn.textContent = '✓ salvo!'; btn.style.color = 'var(--green)';
+  setTimeout(() => { btn.textContent = 'salvar'; btn.style.color = ''; }, 2000);
+}
+
+async function gerarProtocolo() {
+  const btn = document.getElementById('proto-gen-btn');
+  const clients = getClients();
+  if (!clients.length) { alert('Cadastre pelo menos um cliente primeiro.'); return; }
+  if (!_protoClientId) _protoClientId = clients[0].id;
+
+  const client = clients.find(c => c.id === _protoClientId);
+  if (!client) return;
+
+  const claudeKey = getConfig().claude_key || localStorage.getItem('mi_claude_key') || '';
+  if (!claudeKey) { alert('Configure a Claude API Key nas Configurações.'); return; }
+
+  btn.classList.add('loading'); btn.disabled = true;
+  setStatus(true, 'gerando protocolo…');
+
+  try {
+    // Buscar último histórico do cliente
+    const hist = getHistory().filter(h => h.client_id === _protoClientId || h.clientName === client.name);
+    let contextoAnalise = '';
+    let statsData = [];
+
+    if (hist.length) {
+      const ultimo = hist[0];
+      contextoAnalise = `Última análise (${new Date(ultimo.ts).toLocaleDateString('pt-BR')}):
+Gasto: R$ ${ultimo.total_spend?.toFixed(2)} | CPR médio: R$ ${ultimo.avg_cpr?.toFixed(2)} | Meta CPR: R$ ${client.cpr}
+Resultados: ${ultimo.total_results} | Campanhas: ${ultimo.n_camps} | Críticas: ${ultimo.critical} | Atenção: ${ultimo.warn}
+Resumo: ${ultimo.resumo}
+${(ultimo.analysis?.campanhas||[]).map(c => `- ${c.nome||c.id}: ${c.status} — ${c.diagnostico}`).join('\n')}`;
+
+      statsData = [
+        { label: 'Gasto total', value: 'R$ ' + (ultimo.total_spend||0).toFixed(2), color: 'var(--text)' },
+        { label: 'CPR médio', value: 'R$ ' + (ultimo.avg_cpr||0).toFixed(2), color: (ultimo.avg_cpr||0) <= client.cpr ? 'var(--green)' : 'var(--red)' },
+        { label: 'Meta CPR', value: 'R$ ' + client.cpr.toFixed(2), color: 'var(--muted)' },
+        { label: 'Resultados', value: ultimo.total_results || '—', color: 'var(--text)' },
+        { label: 'Campanhas críticas', value: ultimo.critical || 0, color: ultimo.critical > 0 ? 'var(--red)' : 'var(--green)' },
+      ];
+    } else {
+      contextoAnalise = 'Nenhuma análise recente disponível. Gere uma análise primeiro na aba Análise.';
+    }
+
+    const prompt = `Você é um especialista em Meta Ads. Com base nos dados abaixo, crie um protocolo de otimização semanal para o cliente.
+
+Cliente: ${client.name}
+Nicho: ${client.niche || client.ctx || 'não informado'}
+${contextoAnalise}
+
+Retorne APENAS JSON sem markdown:
+{
+  "items": [
+    {
+      "id": "1",
+      "prio": "P1|P2|P3",
+      "text": "Descrição clara da tarefa",
+      "meta": "Detalhe técnico ou valor exato"
+    }
+  ]
+}
+
+Regras:
+- P1 = fazer HOJE (máx 3 itens) — ações críticas urgentes
+- P2 = próximas 48h (máx 4 itens) — otimizações importantes
+- P3 = esta semana (máx 5 itens) — melhorias estratégicas
+- Cada tarefa deve ser específica, acionável e com valor exato quando possível
+- Total máximo: 12 itens
+- Se não há dados de análise, crie um checklist de configuração inicial`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': claudeKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    let raw = data.content[0].text.trim().replace(/```json|```/g, '');
+    const fb = raw.indexOf('{'), lb = raw.lastIndexOf('}');
+    if (fb !== -1) raw = raw.slice(fb, lb + 1);
+    const resultado = JSON.parse(raw);
+
+    // Salvar no localStorage
+    if (!_protoData[_protoClientId]) _protoData[_protoClientId] = {};
+    _protoData[_protoClientId] = {
+      ..._protoData[_protoClientId],
+      items: resultado.items.map(i => ({ ...i, done: false })),
+      stats: statsData,
+      ts: new Date().toISOString(),
+    };
+    saveProtoData();
+    setStatus(true, 'protocolo gerado');
+    renderProtoChecklist();
+
+  } catch(e) {
+    setStatus(false, 'erro');
+    alert('Erro ao gerar protocolo: ' + e.message);
+    console.error(e);
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
 // ═══════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════
@@ -1456,10 +1743,77 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (sl) { sl.textContent = '● Erro: ' + e.message; sl.style.color = 'var(--red)'; }
   }
   loadCredentials();
+  loadProtoData();
   renderDashboard();
   renderHistory();
   renderClientChips();
 });
 </script>
+
+<!-- ══════════════════════════════════════════════════════
+     PÁGINA 5 — PROTOCOLO DE OTIMIZAÇÃO
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-protocolo">
+  <div class="container">
+    <div class="proto-header">
+      <div>
+        <div class="proto-title">Protocolo de Otimização</div>
+        <div class="proto-sub" id="proto-sub">Checklist semanal gerado pelo Claude com base nas suas campanhas</div>
+      </div>
+      <button class="proto-generate-btn" id="proto-gen-btn" onclick="gerarProtocolo()">
+        <div class="spinner"></div>
+        <span class="btn-label">⚡ Gerar Protocolo</span>
+      </button>
+    </div>
+
+    <!-- Tabs por cliente -->
+    <div class="proto-client-tabs" id="proto-client-tabs"></div>
+
+    <div class="proto-layout">
+      <!-- Checklist -->
+      <div>
+        <div id="proto-checklist-wrap">
+          <div class="proto-empty">
+            <div class="proto-empty-icon">🎯</div>
+            <div class="proto-empty-title">Nenhum protocolo gerado ainda</div>
+            <div class="proto-empty-sub">Clique em "Gerar Protocolo" para o Claude analisar suas campanhas e criar o checklist da semana</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="proto-sidebar">
+
+        <!-- Progresso -->
+        <div class="proto-progress" id="proto-progress-wrap" style="display:none">
+          <div class="proto-progress-title">Progresso da Semana</div>
+          <div class="proto-progress-bar-wrap">
+            <div class="proto-progress-bar" id="proto-progress-bar" style="width:0%"></div>
+          </div>
+          <div class="proto-progress-label" id="proto-progress-label">0 de 0 tarefas concluídas</div>
+        </div>
+
+        <!-- Stats da semana -->
+        <div class="proto-stat-card" id="proto-stats-wrap" style="display:none">
+          <div class="proto-stat-title">Métricas da Semana</div>
+          <div id="proto-stats-rows"></div>
+        </div>
+
+        <!-- Anotações -->
+        <div class="proto-notes">
+          <div class="proto-notes-hdr">
+            <span class="proto-notes-title">Anotações</span>
+            <button class="proto-notes-save" onclick="salvarNota()">salvar</button>
+          </div>
+          <div class="proto-notes-body">
+            <textarea class="proto-notes-area" id="proto-notes-area" placeholder="Anotações da semana, insights, observações sobre os clientes..."></textarea>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
