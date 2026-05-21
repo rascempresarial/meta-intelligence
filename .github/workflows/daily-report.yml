@@ -1,184 +1,136 @@
-name: Relatório Diário Meta Intelligence
+const https = require('https');
 
-on:
-  schedule:
-    - cron: '0 12 * * *'  # 9h Brasília (UTC-3) = 12h UTC
-  workflow_dispatch:       # permite rodar manualmente também
+const META_TOKEN = process.env.META_TOKEN;
+const CLAUDE_KEY = process.env.CLAUDE_KEY;
+const TG_TOKEN   = process.env.TG_TOKEN;
+const TG_CHAT    = process.env.TG_CHAT;
 
-jobs:
-  relatorio:
-    runs-on: ubuntu-latest
+const CLIENTES = [
+  { nome: 'César Imports DF',  account: 'act_822972146955700',  cpr_meta: 3.00, contexto: 'loja de iphones e eletrônicos, Brasília, Feira dos Importados' },
+  { nome: 'K+ Veículos',       account: 'act_1732263820910608', cpr_meta: 3.00, contexto: 'concessionária de veículos seminovos, Brasília' },
+];
 
-    steps:
-      - name: Gerar e enviar relatório
-        run: |
-          node << 'EOF'
-          const https = require('https');
+function req(options, body) {
+  return new Promise((resolve, reject) => {
+    const r = https.request(options, res => {
+      let data = '';
+      res.on('data', d => data += d);
+      res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({ _raw: data }); } });
+    });
+    r.on('error', reject);
+    if (body) r.write(typeof body === 'string' ? body : JSON.stringify(body));
+    r.end();
+  });
+}
 
-          const META_TOKEN  = process.env.META_TOKEN;
-          const CLAUDE_KEY  = process.env.CLAUDE_KEY;
-          const TG_TOKEN    = process.env.TG_TOKEN;
-          const TG_CHAT     = process.env.TG_CHAT;
+async function fetchCampanhas(account) {
+  const fields = 'campaign_name,campaign_id,objective,spend,impressions,reach,clicks,ctr,cpc,cpm,frequency,cost_per_action_type,actions';
+  const filtering = JSON.stringify([{ field: 'campaign.effective_status', operator: 'IN', value: ['ACTIVE'] }]);
+  const qs = `access_token=${META_TOKEN}&level=campaign&date_preset=last_7d&fields=${fields}&filtering=${encodeURIComponent(filtering)}&limit=20`;
+  const data = await req({ hostname: 'graph.facebook.com', path: `/v19.0/${account}/insights?${qs}`, method: 'GET' });
+  if (data.error) throw new Error(data.error.message);
+  return data.data || [];
+}
 
-          const CLIENTES = [
-            { nome: 'César Imports DF',   account: 'act_822972146955700',   cpr_meta: 3.00, contexto: 'loja de iphones e eletrônicos, Brasília, Feira dos Importados' },
-            { nome: 'K+ Veículos',        account: 'act_1732263820910608',  cpr_meta: 3.00, contexto: 'concessionária de veículos seminovos, Brasília' },
-          ];
+function normalizar(c, cpr_meta) {
+  const spend = parseFloat(c.spend || 0);
+  const ctr   = parseFloat(c.ctr || 0);
+  const cpc   = parseFloat(c.cpc || 0);
+  const cpm   = parseFloat(c.cpm || 0);
+  const freq  = parseFloat(c.frequency || 0);
+  let cpr = 0, results = 0;
+  if (c.cost_per_action_type) {
+    const tipos = ['onsite_conversion.messaging_conversation_started_7d','lead','purchase','omni_initiated_checkout'];
+    for (const a of c.cost_per_action_type) {
+      if (tipos.includes(a.action_type)) { cpr = parseFloat(a.value || 0); break; }
+    }
+  }
+  if (!results && spend && cpr) results = Math.round(spend / cpr);
+  const status = cpr <= cpr_meta ? 'ok' : cpr <= cpr_meta * 1.3 ? 'warn' : 'bad';
+  return { ...c, spend, ctr, cpc, cpm, freq, cpr, results, status };
+}
 
-          function req(options, body) {
-            return new Promise((resolve, reject) => {
-              const r = https.request(options, res => {
-                let data = '';
-                res.on('data', d => data += d);
-                res.on('end', () => {
-                  try { resolve(JSON.parse(data)); }
-                  catch { resolve({ _raw: data }); }
-                });
-              });
-              r.on('error', reject);
-              if (body) r.write(typeof body === 'string' ? body : JSON.stringify(body));
-              r.end();
-            });
-          }
+async function analisarClaude(campanhas, cpr_meta, contexto) {
+  const bloco = campanhas.map(c =>
+    `CAMPANHA: ${c.campaign_name}\n  Objetivo: ${c.objective}\n  Gasto: R$ ${c.spend.toFixed(2)} | CPR: R$ ${c.cpr.toFixed(2)} (meta R$ ${cpr_meta}) | CTR: ${c.ctr.toFixed(2)}% | Freq: ${c.freq.toFixed(1)}`
+  ).join('\n');
 
-          async function fetchCampanhas(account) {
-            const fields = 'campaign_name,campaign_id,objective,spend,impressions,reach,clicks,ctr,cpc,cpm,frequency,cost_per_action_type,actions';
-            const filtering = JSON.stringify([{ field: 'campaign.effective_status', operator: 'IN', value: ['ACTIVE'] }]);
-            const qs = `access_token=${META_TOKEN}&level=campaign&date_preset=last_7d&fields=${fields}&filtering=${encodeURIComponent(filtering)}&limit=20`;
-            const data = await req({ hostname: 'graph.facebook.com', path: `/v19.0/${account}/insights?${qs}`, method: 'GET' });
-            if (data.error) throw new Error(data.error.message);
-            return data.data || [];
-          }
+  const prompt = `Você é especialista em Meta Ads. Analise estas campanhas e retorne APENAS JSON sem markdown:\n{"resumo":"string em 1 frase","campanhas":[{"nome":"string","status":"ok|warn|bad","diagnostico":"1-2 frases","acao_principal":"1 ação concreta"}]}\nContexto: ${contexto}. Meta CPR: R$ ${cpr_meta}.\n${bloco}`;
 
-          function normalizar(c, cpr_meta) {
-            const spend = parseFloat(c.spend || 0);
-            const ctr   = parseFloat(c.ctr || 0);
-            const cpc   = parseFloat(c.cpc || 0);
-            const cpm   = parseFloat(c.cpm || 0);
-            const freq  = parseFloat(c.frequency || 0);
-            let cpr = 0, results = 0;
-            if (c.cost_per_action_type) {
-              const tipos = ['onsite_conversion.messaging_conversation_started_7d','lead','purchase','omni_initiated_checkout'];
-              for (const a of c.cost_per_action_type) {
-                if (tipos.includes(a.action_type)) { cpr = parseFloat(a.value || 0); break; }
-              }
-            }
-            if (!results && spend && cpr) results = Math.round(spend / cpr);
-            const status = cpr <= cpr_meta ? 'ok' : cpr <= cpr_meta * 1.3 ? 'warn' : 'bad';
-            return { ...c, spend, ctr, cpc, cpm, freq, cpr, results, status };
-          }
+  const body = JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
 
-          async function analisarClaude(campanhas, cpr_meta, contexto) {
-            const bloco = campanhas.map(c =>
-              `CAMPANHA: ${c.campaign_name}\n  Objetivo: ${c.objective}\n  Gasto: R$ ${c.spend.toFixed(2)} | CPR: R$ ${c.cpr.toFixed(2)} (meta R$ ${cpr_meta}) | CTR: ${c.ctr.toFixed(2)}% | Freq: ${c.freq.toFixed(1)}`
-            ).join('\n');
+  const data = await req({
+    hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(body) }
+  }, body);
 
-            const prompt = `Você é especialista em Meta Ads. Analise estas campanhas e retorne APENAS JSON sem markdown:
-{"resumo":"string em 1 frase","campanhas":[{"nome":"string","status":"ok|warn|bad","diagnostico":"1-2 frases","acao_principal":"1 ação concreta"}]}
-Contexto: ${contexto}. Meta CPR: R$ ${cpr_meta}.
-${bloco}`;
+  if (data.error) throw new Error(data.error.message);
+  let raw = data.content[0].text.trim().replace(/```json|```/g, '');
+  const fb = raw.indexOf('{'), lb = raw.lastIndexOf('}');
+  if (fb !== -1) raw = raw.slice(fb, lb + 1);
+  return JSON.parse(raw);
+}
 
-            const body = JSON.stringify({
-              model: 'claude-sonnet-4-6',
-              max_tokens: 1500,
-              messages: [{ role: 'user', content: prompt }]
-            });
+async function enviarTelegram(msg) {
+  const body = JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'Markdown' });
+  const data = await req({
+    hostname: 'api.telegram.org', path: `/bot${TG_TOKEN}/sendMessage`, method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+  }, body);
+  if (!data.ok) throw new Error(data.description);
+}
 
-            const data = await req({
-              hostname: 'api.anthropic.com',
-              path: '/v1/messages',
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': CLAUDE_KEY,
-                'anthropic-version': '2023-06-01',
-                'Content-Length': Buffer.byteLength(body)
-              }
-            }, body);
+async function main() {
+  const data = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' });
+  console.log(`Iniciando relatório diário — ${data}`);
 
-            if (data.error) throw new Error(data.error.message);
-            let raw = data.content[0].text.trim().replace(/```json|```/g, '');
-            const fb = raw.indexOf('{'), lb = raw.lastIndexOf('}');
-            if (fb !== -1) raw = raw.slice(fb, lb + 1);
-            return JSON.parse(raw);
-          }
+  let msgGeral = `📊 *Meta Intelligence — Relatório Diário*\n📅 ${data} · Últimos 7 dias\n\n`;
+  let totalSpend = 0, totalCriticos = 0;
 
-          async function enviarTelegram(msg) {
-            const body = JSON.stringify({ chat_id: TG_CHAT, text: msg, parse_mode: 'Markdown' });
-            const data = await req({
-              hostname: 'api.telegram.org',
-              path: `/bot${TG_TOKEN}/sendMessage`,
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
-            }, body);
-            if (!data.ok) throw new Error(data.description);
-          }
+  for (const cliente of CLIENTES) {
+    console.log(`Processando: ${cliente.nome}`);
+    try {
+      const raw = await fetchCampanhas(cliente.account);
+      if (!raw.length) { msgGeral += `⚪ *${cliente.nome}*\n_Nenhuma campanha ativa_\n\n`; continue; }
 
-          async function main() {
-            const data = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' });
-            console.log(`Iniciando relatório diário — ${data}`);
+      const camps   = raw.map(c => normalizar(c, cliente.cpr_meta));
+      const analise = await analisarClaude(camps, cliente.cpr_meta, cliente.contexto);
 
-            let msgGeral = `📊 *Meta Intelligence — Relatório Diário*\n📅 ${data} · Últimos 7 dias\n\n`;
-            let totalSpend = 0, totalCriticos = 0;
+      const spend   = camps.reduce((s, c) => s + c.spend, 0);
+      const results = camps.reduce((s, c) => s + c.results, 0);
+      const avgCpr  = results > 0 ? spend / results : 0;
+      const criticos = camps.filter(c => c.status === 'bad').length;
+      const warns    = camps.filter(c => c.status === 'warn').length;
 
-            for (const cliente of CLIENTES) {
-              console.log(`Processando: ${cliente.nome}`);
-              try {
-                const raw = await fetchCampanhas(cliente.account);
-                if (!raw.length) {
-                  msgGeral += `⚪ *${cliente.nome}*\n_Nenhuma campanha ativa_\n\n`;
-                  continue;
-                }
+      totalSpend    += spend;
+      totalCriticos += criticos;
 
-                const camps = raw.map(c => normalizar(c, cliente.cpr_meta));
-                const analise = await analisarClaude(camps, cliente.cpr_meta, cliente.contexto);
+      const emoji = criticos > 0 ? '🔴' : warns > 0 ? '🟡' : '🟢';
+      msgGeral += `${emoji} *${cliente.nome}*\n`;
+      msgGeral += `💰 R$ ${spend.toFixed(2)} · CPR médio R$ ${avgCpr.toFixed(2)} · ${results} resultados\n`;
+      msgGeral += `📌 ${camps.length} camp. ativa(s) · ${criticos} crítica(s) · ${warns} atenção\n`;
+      msgGeral += `💡 ${analise.resumo}\n`;
 
-                const spend = camps.reduce((s, c) => s + c.spend, 0);
-                const results = camps.reduce((s, c) => s + c.results, 0);
-                const avgCpr = results > 0 ? spend / results : 0;
-                const criticos = camps.filter(c => c.status === 'bad').length;
-                const warns = camps.filter(c => c.status === 'warn').length;
+      if (analise.campanhas) {
+        for (const c of analise.campanhas) {
+          const em = c.status === 'ok' ? '✅' : c.status === 'warn' ? '⚠️' : '🔴';
+          msgGeral += `  ${em} ${c.nome}: ${c.acao_principal}\n`;
+        }
+      }
+      msgGeral += '\n';
+    } catch (err) {
+      console.error(`Erro em ${cliente.nome}:`, err.message);
+      msgGeral += `❌ *${cliente.nome}* — Erro: ${err.message}\n\n`;
+    }
+  }
 
-                totalSpend += spend;
-                totalCriticos += criticos;
+  msgGeral += `━━━━━━━━━━━━━━━━━━\n`;
+  msgGeral += `💸 *Gasto total:* R$ ${totalSpend.toFixed(2)}\n`;
+  msgGeral += `🚨 *Campanhas críticas:* ${totalCriticos}\n`;
+  msgGeral += `_via Meta Intelligence v2 · RASC_`;
 
-                const emoji = criticos > 0 ? '🔴' : warns > 0 ? '🟡' : '🟢';
+  await enviarTelegram(msgGeral);
+  console.log('Relatório enviado com sucesso!');
+}
 
-                msgGeral += `${emoji} *${cliente.nome}*\n`;
-                msgGeral += `💰 R$ ${spend.toFixed(2)} · CPR médio R$ ${avgCpr.toFixed(2)} · ${results} resultados\n`;
-                msgGeral += `📌 ${camps.length} camp. ativa(s) · ${criticos} crítica(s) · ${warns} atenção\n`;
-                msgGeral += `💡 ${analise.resumo}\n`;
-
-                if (analise.campanhas) {
-                  for (const c of analise.campanhas) {
-                    const em = c.status === 'ok' ? '✅' : c.status === 'warn' ? '⚠️' : '🔴';
-                    msgGeral += `  ${em} ${c.nome}: ${c.acao_principal}\n`;
-                  }
-                }
-                msgGeral += '\n';
-
-              } catch (err) {
-                console.error(`Erro em ${cliente.nome}:`, err.message);
-                msgGeral += `❌ *${cliente.nome}* — Erro: ${err.message}\n\n`;
-              }
-            }
-
-            msgGeral += `━━━━━━━━━━━━━━━━━━\n`;
-            msgGeral += `💸 *Gasto total:* R$ ${totalSpend.toFixed(2)}\n`;
-            msgGeral += `🚨 *Campanhas críticas:* ${totalCriticos}\n`;
-            msgGeral += `_via Meta Intelligence v2 · RASC_`;
-
-            await enviarTelegram(msgGeral);
-            console.log('Relatório enviado com sucesso!');
-          }
-
-          main().catch(err => {
-            console.error('Erro fatal:', err);
-            process.exit(1);
-          });
-          EOF
-        env:
-          META_TOKEN: ${{ secrets.META_TOKEN }}
-          CLAUDE_KEY: ${{ secrets.CLAUDE_KEY }}
-          TG_TOKEN:   ${{ secrets.TG_TOKEN }}
-          TG_CHAT:    ${{ secrets.TG_CHAT }}
+main().catch(err => { console.error('Erro fatal:', err); process.exit(1); });
